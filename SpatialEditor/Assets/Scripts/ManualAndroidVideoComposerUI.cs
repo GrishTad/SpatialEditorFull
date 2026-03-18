@@ -26,6 +26,7 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
     [Header("UI")]
     [SerializeField] private Button pickTwoVideosButton;
     [SerializeField] private Button addVideoButton;
+    [SerializeField] private Button addAudioButton;
     [SerializeField] private Button saveButton;
     [SerializeField] private GameObject statusPopupObject;
     [SerializeField] private TMP_Text statusText;
@@ -38,7 +39,8 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
     [Header("Picker")]
     [Tooltip("Pick videos one-by-one to avoid Android Photo Picker synthetic names from multi-select.")]
     [SerializeField] private bool forceSinglePickerEvenIfMultiSupported = true;
-    [SerializeField] private int maxSelectableVideos = 64;
+    [Tooltip("0 = unlimited")]
+    [SerializeField] private int maxSelectableVideos = 0;
     [Tooltip("If filename type is unknown, force SBS Left-Right stereo for Flat3D.")]
     [SerializeField] private bool forceSbsStereoForFlat3DFallback = true;
 
@@ -49,7 +51,7 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
     [SerializeField] private int outputFps = 30;
     [SerializeField] private bool setAllUnmatchedPlanesInactive = true;
 
-    private readonly List<AndroidGalleryVideoEntry> selectedVideos = new List<AndroidGalleryVideoEntry>();
+    private readonly SpatialProject spatialProject = new SpatialProject();
     private bool busy;
     private bool editorBridgeInitialized;
     private bool nativeGalleryPickerConfigured;
@@ -57,6 +59,8 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
     private readonly List<AndroidGalleryVideoEntry> galleryNameCacheEntries = new List<AndroidGalleryVideoEntry>();
     private readonly Dictionary<long, AndroidGalleryVideoEntry> galleryNameCacheById = new Dictionary<long, AndroidGalleryVideoEntry>();
     private static readonly int StereoModeShaderId = Shader.PropertyToID("_StereoMode");
+    private const int NativeGalleryMediaTypeVideo = 2;
+    private const int NativeGalleryMediaTypeAudio = 4;
 
     public string LastOutputPath => lastOutputPath;
 
@@ -70,6 +74,11 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
         if (addVideoButton != null && addVideoButton != pickTwoVideosButton)
         {
             addVideoButton.onClick.AddListener(OnAddVideoButtonClicked);
+        }
+
+        if (addAudioButton != null)
+        {
+            addAudioButton.onClick.AddListener(OnAddAudioButtonClicked);
         }
 
         if (saveButton != null)
@@ -93,6 +102,11 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
         if (addVideoButton != null && addVideoButton != pickTwoVideosButton)
         {
             addVideoButton.onClick.RemoveListener(OnAddVideoButtonClicked);
+        }
+
+        if (addAudioButton != null)
+        {
+            addAudioButton.onClick.RemoveListener(OnAddAudioButtonClicked);
         }
 
         if (saveButton != null)
@@ -122,6 +136,301 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
         }
     }
 
+    public void OnAddAudioButtonClicked()
+    {
+        if (!busy)
+        {
+            StartCoroutine(AddAudioFlow());
+        }
+    }
+
+    public SpatialProject GetSpatialProject()
+    {
+        return spatialProject;
+    }
+
+    public void ClearProjectMedia()
+    {
+        spatialProject.videos.Clear();
+        spatialProject.audios.Clear();
+        SetStatus("Finished: project media cleared.", true);
+    }
+
+    public bool MoveVideo(int fromIndex, int toIndex)
+    {
+        if (fromIndex < 0 || fromIndex >= spatialProject.videos.Count)
+        {
+            return false;
+        }
+
+        if (toIndex < 0 || toIndex >= spatialProject.videos.Count)
+        {
+            return false;
+        }
+
+        if (fromIndex == toIndex)
+        {
+            return true;
+        }
+
+        SpatialVideoMedia item = spatialProject.videos[fromIndex];
+        spatialProject.videos.RemoveAt(fromIndex);
+        spatialProject.videos.Insert(toIndex, item);
+
+        if (setAllUnmatchedPlanesInactive)
+        {
+            SetAllPlanesActive(false);
+        }
+        for (int i = 0; i < spatialProject.videos.Count; i++)
+        {
+            ApplyVideoToMatchingPlane(spatialProject.videos[i], i);
+        }
+
+        SetStatus(BuildSelectedVideosStatus(), true);
+        return true;
+    }
+
+    public bool RemoveVideoAt(int index)
+    {
+        if (index < 0 || index >= spatialProject.videos.Count)
+        {
+            return false;
+        }
+
+        spatialProject.videos.RemoveAt(index);
+
+        if (setAllUnmatchedPlanesInactive)
+        {
+            SetAllPlanesActive(false);
+        }
+        for (int i = 0; i < spatialProject.videos.Count; i++)
+        {
+            ApplyVideoToMatchingPlane(spatialProject.videos[i], i);
+        }
+
+        SetStatus(BuildSelectedVideosStatus(), true);
+        return true;
+    }
+
+    public bool SetVideoTrim(int videoIndex, long trimStartMs, long trimEndMs)
+    {
+        if (videoIndex < 0 || videoIndex >= spatialProject.videos.Count)
+        {
+            return false;
+        }
+
+        SpatialVideoMedia video = spatialProject.videos[videoIndex];
+        if (video == null || video.edits == null)
+        {
+            return false;
+        }
+
+        long safeStart = Math.Max(0, trimStartMs);
+        long safeEnd = Math.Max(safeStart + 1, trimEndMs);
+
+        video.edits.trimStartMs = safeStart;
+        video.edits.trimEndMs = safeEnd;
+        return true;
+    }
+
+    public bool SetVideoColorAdjustments(int videoIndex, double brightness, double contrast, double saturation)
+    {
+        if (videoIndex < 0 || videoIndex >= spatialProject.videos.Count)
+        {
+            return false;
+        }
+
+        SpatialVideoMedia video = spatialProject.videos[videoIndex];
+        if (video == null || video.edits == null)
+        {
+            return false;
+        }
+
+        video.edits.brightness = brightness;
+        video.edits.contrast = contrast;
+        video.edits.saturation = saturation;
+        return true;
+    }
+
+    public bool SetVideoLut(int videoIndex, string lutUri)
+    {
+        if (videoIndex < 0 || videoIndex >= spatialProject.videos.Count)
+        {
+            return false;
+        }
+
+        SpatialVideoMedia video = spatialProject.videos[videoIndex];
+        if (video == null || video.edits == null)
+        {
+            return false;
+        }
+
+        video.edits.lut = string.IsNullOrWhiteSpace(lutUri) ? null : lutUri;
+        return true;
+    }
+
+    public bool SetVideoAudioMute(int videoIndex, bool muted)
+    {
+        if (videoIndex < 0 || videoIndex >= spatialProject.videos.Count)
+        {
+            return false;
+        }
+
+        SpatialVideoMedia video = spatialProject.videos[videoIndex];
+        if (video == null || video.edits == null)
+        {
+            return false;
+        }
+
+        video.edits.isAudioMuted = muted;
+        return true;
+    }
+
+    public bool AddAudioMedia(string uri, string displayName, long durationMs, long sizeBytes = 0, string mimeType = "audio/*")
+    {
+        if (string.IsNullOrWhiteSpace(uri))
+        {
+            return false;
+        }
+
+        int index = spatialProject.audios.Count + 1;
+        spatialProject.audios.Add(new SpatialAudioMedia
+        {
+            id = GenerateNextAudioId(),
+            sourceUri = uri,
+            displayName = string.IsNullOrWhiteSpace(displayName) ? ("audio_" + index + ".mp3") : displayName,
+            durationMs = Math.Max(0, durationMs),
+            sizeBytes = Math.Max(0, sizeBytes),
+            mimeType = string.IsNullOrWhiteSpace(mimeType) ? "audio/*" : mimeType,
+            edits = new SpatialAudioEditSettings
+            {
+                trimStartMs = 0,
+                trimEndMs = durationMs > 0 ? durationMs : 1000,
+                loop = false,
+                volume = 1.0,
+                sequenceStartMs = 0
+            }
+        });
+
+        return true;
+    }
+
+    public void AddAudioMediaForTesting(string uri, string displayName, long durationMs)
+    {
+        AddAudioMedia(uri, displayName, durationMs, 0, "audio/*");
+    }
+
+    public bool MoveAudio(int fromIndex, int toIndex)
+    {
+        if (fromIndex < 0 || fromIndex >= spatialProject.audios.Count)
+        {
+            return false;
+        }
+
+        if (toIndex < 0 || toIndex >= spatialProject.audios.Count)
+        {
+            return false;
+        }
+
+        if (fromIndex == toIndex)
+        {
+            return true;
+        }
+
+        SpatialAudioMedia item = spatialProject.audios[fromIndex];
+        spatialProject.audios.RemoveAt(fromIndex);
+        spatialProject.audios.Insert(toIndex, item);
+        return true;
+    }
+
+    public bool RemoveAudioAt(int index)
+    {
+        if (index < 0 || index >= spatialProject.audios.Count)
+        {
+            return false;
+        }
+
+        spatialProject.audios.RemoveAt(index);
+        return true;
+    }
+
+    public bool SetAudioTrim(int audioIndex, long trimStartMs, long trimEndMs)
+    {
+        if (audioIndex < 0 || audioIndex >= spatialProject.audios.Count)
+        {
+            return false;
+        }
+
+        SpatialAudioMedia audio = spatialProject.audios[audioIndex];
+        if (audio == null || audio.edits == null)
+        {
+            return false;
+        }
+
+        long safeStart = Math.Max(0, trimStartMs);
+        long safeEnd = Math.Max(safeStart + 1, trimEndMs);
+        audio.edits.trimStartMs = safeStart;
+        audio.edits.trimEndMs = safeEnd;
+        return true;
+    }
+
+    public bool SetAudioVolume(int audioIndex, double volume)
+    {
+        if (audioIndex < 0 || audioIndex >= spatialProject.audios.Count)
+        {
+            return false;
+        }
+
+        SpatialAudioMedia audio = spatialProject.audios[audioIndex];
+        if (audio == null || audio.edits == null)
+        {
+            return false;
+        }
+
+        audio.edits.volume = volume;
+        return true;
+    }
+
+    public bool SetAudioSequenceStart(int audioIndex, long sequenceStartMs)
+    {
+        if (audioIndex < 0 || audioIndex >= spatialProject.audios.Count)
+        {
+            return false;
+        }
+
+        SpatialAudioMedia audio = spatialProject.audios[audioIndex];
+        if (audio == null || audio.edits == null)
+        {
+            return false;
+        }
+
+        audio.edits.sequenceStartMs = Math.Max(0, sequenceStartMs);
+        return true;
+    }
+
+    private string GenerateNextAudioId()
+    {
+        int suffix = spatialProject.audios.Count + 1;
+        string candidate = "a" + suffix.ToString(CultureInfo.InvariantCulture);
+        HashSet<string> used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < spatialProject.audios.Count; i++)
+        {
+            SpatialAudioMedia audio = spatialProject.audios[i];
+            if (audio != null && !string.IsNullOrWhiteSpace(audio.id))
+            {
+                used.Add(audio.id);
+            }
+        }
+
+        while (used.Contains(candidate))
+        {
+            suffix++;
+            candidate = "a" + suffix.ToString(CultureInfo.InvariantCulture);
+        }
+
+        return candidate;
+    }
+
     private IEnumerator AddVideoFlow()
     {
         busy = true;
@@ -137,7 +446,7 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             yield break;
         }
 
-        if (selectedVideos.Count >= Mathf.Max(1, maxSelectableVideos))
+        if (maxSelectableVideos > 0 && spatialProject.videos.Count >= maxSelectableVideos)
         {
             SetStatus($"Failed: max videos reached ({maxSelectableVideos}).", true);
             busy = false;
@@ -158,17 +467,64 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             yield break;
         }
 
-        selectedVideos.Add(picked);
+        SpatialVideoMedia media = CreateVideoMediaFromEntry(picked);
+        spatialProject.videos.Add(media);
         if (setAllUnmatchedPlanesInactive)
         {
             SetAllPlanesActive(false);
         }
-        for (int i = 0; i < selectedVideos.Count; i++)
+        for (int i = 0; i < spatialProject.videos.Count; i++)
         {
-            ApplyVideoToMatchingPlane(selectedVideos[i], i);
+            ApplyVideoToMatchingPlane(spatialProject.videos[i], i);
         }
 
-        Debug.Log($"ManualAndroidVideoComposerUI: Added video {selectedVideos.Count} => {picked.displayName}");
+        Debug.Log($"ManualAndroidVideoComposerUI: Added video {spatialProject.videos.Count} => {media.displayName}");
+        SetStatus(BuildSelectedVideosStatus(), true);
+
+        busy = false;
+        SetButtonsInteractable(true);
+    }
+
+    private IEnumerator AddAudioFlow()
+    {
+        busy = true;
+        SetButtonsInteractable(false);
+        SetStatus("Processing: opening add audio...", true);
+
+        if (!AndroidVideoEditorBridge.IsAndroidRuntime)
+        {
+            Debug.LogWarning("ManualAndroidVideoComposerUI: Android runtime only.");
+            SetStatus("Failed: Android runtime only.", true);
+            busy = false;
+            SetButtonsInteractable(true);
+            yield break;
+        }
+
+        SetStatus("Processing: requesting gallery permission...", true);
+        string pickedPath = null;
+        yield return PickSingleAudioWithNativeGallery("Select audio", (path) => pickedPath = path);
+
+        if (string.IsNullOrEmpty(pickedPath))
+        {
+            Debug.LogError("ManualAndroidVideoComposerUI: Could not add audio.");
+            SetStatus("Failed: could not add audio.", true);
+            busy = false;
+            SetButtonsInteractable(true);
+            yield break;
+        }
+
+        SpatialAudioMedia media = CreateAudioMediaFromLocalPath(pickedPath);
+        if (media == null)
+        {
+            Debug.LogError("ManualAndroidVideoComposerUI: Could not parse selected audio.");
+            SetStatus("Failed: could not read selected audio.", true);
+            busy = false;
+            SetButtonsInteractable(true);
+            yield break;
+        }
+
+        spatialProject.audios.Add(media);
+        Debug.Log($"ManualAndroidVideoComposerUI: Added audio {spatialProject.audios.Count} => {media.displayName}");
         SetStatus(BuildSelectedVideosStatus(), true);
 
         busy = false;
@@ -190,7 +546,7 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             yield break;
         }
 
-        if (selectedVideos == null || selectedVideos.Count == 0)
+        if (spatialProject.videos == null || spatialProject.videos.Count == 0)
         {
             Debug.LogError("ManualAndroidVideoComposerUI: Add at least 1 video before exporting.");
             SetStatus("Failed: add at least 1 video before exporting.", true);
@@ -217,14 +573,19 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             editorBridgeInitialized = true;
         }
 
-        string outputFileName = BuildOutputFileName(selectedVideos);
+        string outputFileName = BuildOutputFileName(spatialProject.videos);
         string outputPath = Path.Combine(Application.persistentDataPath, outputFileName);
         string outputUri = "file://" + outputPath.Replace("\\", "/");
         Debug.Log("ManualAndroidVideoComposerUI: outputPath => " + outputPath);
         Debug.Log("ManualAndroidVideoComposerUI: outputUri => " + outputUri);
         SetStatus("Processing: output path prepared...\n" + outputPath, true);
 
-        string projectJson = BuildProjectJson(selectedVideos.ToArray(), outputUri);
+        spatialProject.export.outputUri = outputUri;
+        spatialProject.export.width = outputWidth;
+        spatialProject.export.height = outputHeight;
+        spatialProject.export.fps = outputFps;
+        WarnAboutUnsupportedAudioSequenceOffsets();
+        string projectJson = SpatialProjectMapper.ToProjectJson(spatialProject);
         Debug.Log("ManualAndroidVideoComposerUI: projectJson => " + projectJson);
 
         SetStatus("Processing: validating project...", true);
@@ -305,9 +666,28 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
         }
     }
 
+    private void WarnAboutUnsupportedAudioSequenceOffsets()
+    {
+        for (int i = 0; i < spatialProject.audios.Count; i++)
+        {
+            SpatialAudioMedia audio = spatialProject.audios[i];
+            if (audio == null || audio.edits == null)
+            {
+                continue;
+            }
+
+            if (audio.edits.sequenceStartMs > 0)
+            {
+                Debug.LogWarning(
+                    "ManualAndroidVideoComposerUI: audio sequenceStartMs is currently not mapped to Android export schema. " +
+                    "Track index=" + i + ", requestedStartMs=" + audio.edits.sequenceStartMs);
+            }
+        }
+    }
+
     public void SetPickedVideosForTesting(string firstUri, string firstName, string secondUri, string secondName)
     {
-        selectedVideos.Clear();
+        spatialProject.videos.Clear();
 
         AndroidGalleryVideoEntry first = new AndroidGalleryVideoEntry
         {
@@ -329,15 +709,17 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             dateAddedSec = 0,
         };
 
-        selectedVideos.Add(first);
-        selectedVideos.Add(second);
+        SpatialVideoMedia firstMedia = CreateVideoMediaFromEntry(first);
+        SpatialVideoMedia secondMedia = CreateVideoMediaFromEntry(second);
+        spatialProject.videos.Add(firstMedia);
+        spatialProject.videos.Add(secondMedia);
 
         if (setAllUnmatchedPlanesInactive)
         {
             SetAllPlanesActive(false);
         }
-        ApplyVideoToMatchingPlane(first, 0);
-        ApplyVideoToMatchingPlane(second, 1);
+        ApplyVideoToMatchingPlane(firstMedia, 0);
+        ApplyVideoToMatchingPlane(secondMedia, 1);
         SetStatus(BuildSelectedVideosStatus(), true);
     }
 
@@ -498,10 +880,59 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
         onCompleted(pickedPath);
     }
 
+    private IEnumerator PickSingleAudioWithNativeGallery(string title, Action<string> onCompleted)
+    {
+        onCompleted ??= delegate { };
+
+        ConfigureNativeGalleryPickerForDisplayNames();
+
+        bool permissionDone = false;
+        bool permissionGranted = false;
+        RequestNativeGalleryAudioReadPermission((granted) =>
+        {
+            permissionGranted = granted;
+            permissionDone = true;
+        });
+        while (!permissionDone)
+        {
+            yield return null;
+        }
+
+        if (!permissionGranted)
+        {
+            SetStatus("Failed: gallery permission denied.", true);
+            onCompleted(null);
+            yield break;
+        }
+
+        SetStatus("Processing: opening audio picker...", true);
+        bool done = false;
+        string pickedPath = null;
+
+        PickAudiosViaNativeGallery(false, title, (paths) =>
+        {
+            pickedPath = (paths != null && paths.Length > 0) ? paths[0] : null;
+            done = true;
+        });
+
+        while (!done)
+        {
+            yield return null;
+        }
+
+        onCompleted(pickedPath);
+    }
+
     private void RequestNativeGalleryReadPermission(Action<bool> onCompleted)
     {
         onCompleted ??= delegate { };
-        RequestReadPermissionViaNativeGallery(onCompleted);
+        RequestReadPermissionViaNativeGallery(NativeGalleryMediaTypeVideo, onCompleted);
+    }
+
+    private void RequestNativeGalleryAudioReadPermission(Action<bool> onCompleted)
+    {
+        onCompleted ??= delegate { };
+        RequestReadPermissionViaNativeGallery(NativeGalleryMediaTypeAudio, onCompleted);
     }
 
     private AndroidGalleryVideoEntry BuildEntryFromLocalPath(string path)
@@ -539,6 +970,132 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             mimeType = "video/*",
             dateAddedSec = 0,
         };
+    }
+
+    private SpatialVideoMedia CreateVideoMediaFromEntry(AndroidGalleryVideoEntry entry)
+    {
+        if (entry == null)
+        {
+            return null;
+        }
+
+        FilenameVideoDetectionResult detection = FilenameVideoTypeDetector.Detect(entry.displayName);
+        long clipDurationMs = entry.durationMs > 0 ? entry.durationMs : 6000;
+
+        return new SpatialVideoMedia
+        {
+            id = GenerateNextVideoId(),
+            sourceUri = entry.uri,
+            displayName = entry.displayName,
+            durationMs = entry.durationMs,
+            sizeBytes = entry.sizeBytes,
+            mimeType = string.IsNullOrWhiteSpace(entry.mimeType) ? "video/*" : entry.mimeType,
+            dateAddedSec = entry.dateAddedSec,
+            projectionType = ToSpatialProjection(detection == null ? DetectedProjection.Unknown : detection.Projection),
+            stereoLayout = ToSpatialStereo(detection == null ? DetectedStereoLayout.Unknown : detection.StereoLayout),
+            edits = new SpatialVideoEditSettings
+            {
+                trimStartMs = 0,
+                trimEndMs = clipDurationMs,
+                isAudioMuted = false,
+                audioVolume = 1.0,
+                brightness = 0.0,
+                contrast = 1.0,
+                saturation = 1.0,
+                lut = null,
+                overlayIds = Array.Empty<string>(),
+                transitionIn = new SpatialTransition { type = SpatialTransitionType.FadeFromBlack, durationMs = 200 },
+                transitionOut = new SpatialTransition { type = SpatialTransitionType.DipToBlack, durationMs = 200 }
+            }
+        };
+    }
+
+    private SpatialAudioMedia CreateAudioMediaFromLocalPath(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        string normalized = path.Replace("\\", "/");
+        long durationMs = GetAudioDurationMsViaMetadataRetriever(normalized);
+        long sizeBytes = TryGetFileSizeBytes(path);
+        string displayName = ResolveAudioDisplayName(normalized);
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            displayName = Path.GetFileName(normalized);
+        }
+
+        if (string.IsNullOrWhiteSpace(displayName))
+        {
+            displayName = "audio_" + (spatialProject.audios.Count + 1).ToString(CultureInfo.InvariantCulture) + ".mp3";
+        }
+
+        return new SpatialAudioMedia
+        {
+            id = GenerateNextAudioId(),
+            sourceUri = normalized,
+            displayName = displayName,
+            durationMs = Math.Max(0, durationMs),
+            sizeBytes = Math.Max(0, sizeBytes),
+            mimeType = "audio/*",
+            edits = new SpatialAudioEditSettings
+            {
+                trimStartMs = 0,
+                trimEndMs = durationMs > 0 ? durationMs : 1000,
+                loop = false,
+                volume = 1.0,
+                sequenceStartMs = 0
+            }
+        };
+    }
+
+    private string ResolveAudioDisplayName(string path)
+    {
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return null;
+        }
+
+        if (path.StartsWith("content://", StringComparison.OrdinalIgnoreCase))
+        {
+            string fromUri = QueryDisplayNameFromContentUri(path);
+            if (!string.IsNullOrWhiteSpace(fromUri))
+            {
+                return fromUri.Trim();
+            }
+        }
+
+        string fromTag = ResolveDisplayNameFromTagLib(path);
+        if (!string.IsNullOrWhiteSpace(fromTag))
+        {
+            return fromTag.Trim();
+        }
+
+        return Path.GetFileName(path);
+    }
+
+    private string GenerateNextVideoId()
+    {
+        int suffix = spatialProject.videos.Count + 1;
+        string candidate = "v" + suffix.ToString(CultureInfo.InvariantCulture);
+        HashSet<string> used = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+        for (int i = 0; i < spatialProject.videos.Count; i++)
+        {
+            SpatialVideoMedia video = spatialProject.videos[i];
+            if (video != null && !string.IsNullOrWhiteSpace(video.id))
+            {
+                used.Add(video.id);
+            }
+        }
+
+        while (used.Contains(candidate))
+        {
+            suffix++;
+            candidate = "v" + suffix.ToString(CultureInfo.InvariantCulture);
+        }
+
+        return candidate;
     }
 
     private string ResolveDisplayName(string path, long durationMs, long sizeBytes)
@@ -1188,13 +1745,13 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
 #endif
     }
 
-    private void RequestReadPermissionViaNativeGallery(Action<bool> onCompleted)
+    private void RequestReadPermissionViaNativeGallery(int mediaType, Action<bool> onCompleted)
     {
         onCompleted ??= delegate { };
 #if UNITY_ANDROID && !UNITY_EDITOR
         try
         {
-            int current = NativeGalleryClass.CallStatic<int>("CheckPermission", AndroidActivity, true, NativeGalleryMediaTypeVideo);
+            int current = NativeGalleryClass.CallStatic<int>("CheckPermission", AndroidActivity, true, mediaType);
             if (current == 1)
             {
                 onCompleted(true);
@@ -1206,7 +1763,7 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
                 AndroidActivity,
                 new NativeGalleryPermissionReceiver(result => onCompleted(result == 1)),
                 true,
-                NativeGalleryMediaTypeVideo);
+                mediaType);
         }
         catch (Exception ex)
         {
@@ -1249,6 +1806,16 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
 
     private void PickVideosViaNativeGallery(bool multiple, string title, Action<string[]> onCompleted)
     {
+        PickMediaViaNativeGallery(NativeGalleryMediaTypeVideo, multiple, "video/*", title, onCompleted);
+    }
+
+    private void PickAudiosViaNativeGallery(bool multiple, string title, Action<string[]> onCompleted)
+    {
+        PickMediaViaNativeGallery(NativeGalleryMediaTypeAudio, multiple, "audio/*", title, onCompleted);
+    }
+
+    private void PickMediaViaNativeGallery(int mediaType, bool multiple, string mime, string title, Action<string[]> onCompleted)
+    {
         onCompleted ??= delegate { };
 #if UNITY_ANDROID && !UNITY_EDITOR
         try
@@ -1262,10 +1829,10 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
                 new NativeGalleryMediaReceiver(
                     singlePath => onCompleted(string.IsNullOrEmpty(singlePath) ? null : new[] { singlePath }),
                     multiplePaths => onCompleted(multiplePaths)),
-                NativeGalleryMediaTypeVideo,
+                mediaType,
                 multiple,
                 pickedMediaPath,
-                "video/*",
+                string.IsNullOrWhiteSpace(mime) ? "*/*" : mime,
                 title ?? string.Empty);
         }
         catch (Exception ex)
@@ -1306,10 +1873,67 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
 #endif
     }
 
+    private long GetAudioDurationMsViaMetadataRetriever(string path)
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        if (string.IsNullOrWhiteSpace(path))
+        {
+            return 0;
+        }
+
+        AndroidJavaObject retriever = null;
+        try
+        {
+            retriever = new AndroidJavaObject("android.media.MediaMetadataRetriever");
+            if (path.StartsWith("content://", StringComparison.OrdinalIgnoreCase))
+            {
+                using (AndroidJavaClass uriClass = new AndroidJavaClass("android.net.Uri"))
+                using (AndroidJavaObject uri = uriClass.CallStatic<AndroidJavaObject>("parse", path))
+                {
+                    retriever.Call("setDataSource", AndroidActivity, uri);
+                }
+            }
+            else
+            {
+                retriever.Call("setDataSource", path);
+            }
+
+            string duration = retriever.Call<string>("extractMetadata", 9);
+            if (long.TryParse(duration, NumberStyles.Integer, CultureInfo.InvariantCulture, out long durationMs))
+            {
+                return Math.Max(0, durationMs);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning("ManualAndroidVideoComposerUI: audio duration read failed for '" + path + "'. " + ex.Message);
+        }
+        finally
+        {
+            if (retriever != null)
+            {
+                try
+                {
+                    retriever.Call("release");
+                }
+                catch
+                {
+                    // ignored
+                }
+
+                retriever.Dispose();
+            }
+        }
+
+        return 0;
+#else
+        return 0;
+#endif
+    }
+
 #if UNITY_ANDROID && !UNITY_EDITOR
     private const string NativeGalleryClassName = "com.yasirkula.unity.NativeGallery";
     private const string UnityPlayerClassName = "com.unity3d.player.UnityPlayer";
-    private const int NativeGalleryMediaTypeVideo = 2;
 
     private AndroidJavaClass nativeGalleryClass;
     private AndroidJavaObject androidActivity;
@@ -1423,7 +2047,7 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
     }
 #endif
 
-    private void ApplyVideoToMatchingPlane(AndroidGalleryVideoEntry entry, int slot)
+    private void ApplyVideoToMatchingPlane(SpatialVideoMedia entry, int slot)
     {
         if (entry == null)
         {
@@ -1451,7 +2075,7 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
 
         binding.videoPlayer.Stop();
         binding.videoPlayer.source = VideoSource.Url;
-        binding.videoPlayer.url = entry.uri;
+        binding.videoPlayer.url = entry.sourceUri;
         binding.videoPlayer.playOnAwake = false;
         binding.videoPlayer.isLooping = true;
         binding.videoPlayer.Prepare();
@@ -1501,6 +2125,14 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             detection.StereoLayout == DetectedStereoLayout.Mono)
         {
             // Name didn't contain reliable type tags: default to Flat3D.
+            return "Flat3D";
+        }
+
+        if (detection.StereoLayout != DetectedStereoLayout.Mono &&
+            detection.StereoLayout != DetectedStereoLayout.Unknown &&
+            (detection.Projection == DetectedProjection.Flat || detection.Projection == DetectedProjection.Unknown))
+        {
+            // Flat clips that carry SBS/TB stereo tags should use the stereoscopic flat plane.
             return "Flat3D";
         }
 
@@ -1591,6 +2223,48 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
         return 0;
     }
 
+    private SpatialProjectionType ToSpatialProjection(DetectedProjection projection)
+    {
+        switch (projection)
+        {
+            case DetectedProjection.VR180:
+            case DetectedProjection.Fisheye180:
+                return SpatialProjectionType.VR180;
+            case DetectedProjection.Fisheye190:
+                return SpatialProjectionType.VR190;
+            case DetectedProjection.Fisheye200:
+                return SpatialProjectionType.VR200;
+            case DetectedProjection.Fisheye220:
+                return SpatialProjectionType.VR220;
+            case DetectedProjection.VR360:
+            case DetectedProjection.EAC360:
+                return SpatialProjectionType.VR360;
+            case DetectedProjection.Flat:
+                return SpatialProjectionType.Flat;
+            default:
+                return SpatialProjectionType.Unknown;
+        }
+    }
+
+    private SpatialStereoLayout ToSpatialStereo(DetectedStereoLayout stereo)
+    {
+        switch (stereo)
+        {
+            case DetectedStereoLayout.Mono:
+                return SpatialStereoLayout.Mono;
+            case DetectedStereoLayout.LeftRight:
+                return SpatialStereoLayout.SideBySideLeftRight;
+            case DetectedStereoLayout.RightLeft:
+                return SpatialStereoLayout.SideBySideRightLeft;
+            case DetectedStereoLayout.TopBottom:
+                return SpatialStereoLayout.TopBottom;
+            case DetectedStereoLayout.BottomTop:
+                return SpatialStereoLayout.BottomTop;
+            default:
+                return SpatialStereoLayout.Unknown;
+        }
+    }
+
     private PlaneBinding FindBindingByKey(string key)
     {
         if (planeBindings == null)
@@ -1639,6 +2313,11 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             addVideoButton.interactable = interactable;
         }
 
+        if (addAudioButton != null)
+        {
+            addAudioButton.interactable = interactable;
+        }
+
         if (saveButton != null)
         {
             saveButton.interactable = interactable;
@@ -1670,13 +2349,15 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
     {
         StringBuilder sb = new StringBuilder(256);
         sb.Append("Finished: selected videos (");
-        sb.Append(selectedVideos.Count);
+        sb.Append(spatialProject.videos.Count);
+        sb.Append("), audios (");
+        sb.Append(spatialProject.audios.Count);
         sb.Append(")");
 
-        int startIndex = Mathf.Max(0, selectedVideos.Count - 6);
-        for (int i = startIndex; i < selectedVideos.Count; i++)
+        int startIndex = Mathf.Max(0, spatialProject.videos.Count - 6);
+        for (int i = startIndex; i < spatialProject.videos.Count; i++)
         {
-            AndroidGalleryVideoEntry entry = selectedVideos[i];
+            SpatialVideoMedia entry = spatialProject.videos[i];
             if (entry == null)
             {
                 continue;
@@ -1688,130 +2369,75 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             sb.Append(entry.displayName);
         }
 
-        return sb.ToString();
-    }
-
-    private string BuildProjectJson(AndroidGalleryVideoEntry[] inputs, string outputUri)
-    {
-        StringBuilder sb = new StringBuilder(2048);
-        sb.Append("{\"version\":1,\"assets\":[");
-
-        for (int i = 0; i < inputs.Length; i++)
+        int audioStartIndex = Mathf.Max(0, spatialProject.audios.Count - 4);
+        for (int i = audioStartIndex; i < spatialProject.audios.Count; i++)
         {
-            AndroidGalleryVideoEntry input = inputs[i];
-            string assetId = "v" + (i + 1);
-            if (i > 0)
+            SpatialAudioMedia entry = spatialProject.audios[i];
+            if (entry == null)
             {
-                sb.Append(',');
+                continue;
             }
 
-            sb.Append("{\"id\":\"");
-            sb.Append(EscapeJson(assetId));
-            sb.Append("\",\"type\":\"video\",\"uri\":\"");
-            sb.Append(EscapeJson(input.uri ?? string.Empty));
-            sb.Append("\"}");
-        }
-
-        sb.Append("],\"videoTrack\":[");
-
-        for (int i = 0; i < inputs.Length; i++)
-        {
-            AndroidGalleryVideoEntry input = inputs[i];
-            string assetId = "v" + (i + 1);
-            long endMs = input.durationMs > 0 ? input.durationMs : 6000;
-
-            if (i > 0)
-            {
-                sb.Append(',');
-            }
-
-            sb.Append("{\"assetId\":\"");
-            sb.Append(EscapeJson(assetId));
-            sb.Append("\",\"trimStartMs\":0,\"trimEndMs\":");
-            sb.Append(endMs.ToString(CultureInfo.InvariantCulture));
-            sb.Append(",\"frameRate\":");
-            sb.Append(Mathf.Max(1, outputFps).ToString(CultureInfo.InvariantCulture));
-            sb.Append(",\"removeAudio\":false,\"volume\":1.0,\"effects\":{\"brightness\":0.0,\"contrast\":1.0,\"saturation\":1.0,\"overlayIds\":[]}");
-            sb.Append(",\"transitionIn\":{\"type\":\"fade_from_black\",\"durationMs\":200}");
-            sb.Append(",\"transitionOut\":{\"type\":\"dip_to_black\",\"durationMs\":200}");
-            sb.Append("}");
-        }
-
-        sb.Append("],\"audioTracks\":[],\"overlays\":[],\"export\":{");
-        sb.Append("\"outputUri\":\"");
-        sb.Append(EscapeJson(outputUri));
-        sb.Append("\",\"videoMimeType\":\"video/avc\",\"audioMimeType\":\"audio/mp4a-latm\",\"width\":");
-        sb.Append(Mathf.Max(2, outputWidth).ToString(CultureInfo.InvariantCulture));
-        sb.Append(",\"height\":");
-        sb.Append(Mathf.Max(2, outputHeight).ToString(CultureInfo.InvariantCulture));
-        sb.Append(",\"fps\":");
-        sb.Append(Mathf.Max(1, outputFps).ToString(CultureInfo.InvariantCulture));
-        sb.Append("}}");
-
-        return sb.ToString();
-    }
-
-    private string EscapeJson(string value)
-    {
-        if (string.IsNullOrEmpty(value))
-        {
-            return string.Empty;
-        }
-
-        StringBuilder sb = new StringBuilder(value.Length + 8);
-        for (int i = 0; i < value.Length; i++)
-        {
-            char c = value[i];
-            switch (c)
-            {
-                case '\\':
-                    sb.Append("\\\\");
-                    break;
-                case '"':
-                    sb.Append("\\\"");
-                    break;
-                case '\b':
-                    sb.Append("\\b");
-                    break;
-                case '\f':
-                    sb.Append("\\f");
-                    break;
-                case '\n':
-                    sb.Append("\\n");
-                    break;
-                case '\r':
-                    sb.Append("\\r");
-                    break;
-                case '\t':
-                    sb.Append("\\t");
-                    break;
-                default:
-                    if (c < 32)
-                    {
-                        sb.Append("\\u");
-                        sb.Append(((int)c).ToString("x4", CultureInfo.InvariantCulture));
-                    }
-                    else
-                    {
-                        sb.Append(c);
-                    }
-                    break;
-            }
+            sb.Append('\n');
+            sb.Append("A");
+            sb.Append(i + 1);
+            sb.Append(") ");
+            sb.Append(entry.displayName);
         }
 
         return sb.ToString();
     }
 
-    private string BuildOutputFileName(IReadOnlyList<AndroidGalleryVideoEntry> inputs)
+    private string BuildOutputFileName(IReadOnlyList<SpatialVideoMedia> inputs)
     {
-        string firstName = (inputs != null && inputs.Count > 0 && inputs[0] != null) ? inputs[0].displayName : "video_a.mp4";
-        string secondName = (inputs != null && inputs.Count > 1 && inputs[1] != null) ? inputs[1].displayName : "video_b.mp4";
-
-        string cleanA = SanitizeBaseName(Path.GetFileNameWithoutExtension(firstName));
-        string cleanB = SanitizeBaseName(Path.GetFileNameWithoutExtension(secondName));
-        string countPart = inputs == null ? "0clips" : inputs.Count.ToString(CultureInfo.InvariantCulture) + "clips";
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        return $"SpatialEditor_{cleanA}_{cleanB}_{countPart}_{timestamp}.mp4";
+        string stereoTag = ResolveOutputStereoTag(inputs);
+        return $"SpatialEditor_{timestamp}_{stereoTag}.mp4";
+    }
+
+    private string ResolveOutputStereoTag(IReadOnlyList<SpatialVideoMedia> inputs)
+    {
+        SpatialStereoLayout layout = SpatialStereoLayout.Unknown;
+        string firstName = null;
+        if (inputs != null && inputs.Count > 0 && inputs[0] != null)
+        {
+            layout = inputs[0].stereoLayout;
+            firstName = inputs[0].displayName;
+        }
+
+        if (layout == SpatialStereoLayout.Unknown && !string.IsNullOrWhiteSpace(firstName))
+        {
+            FilenameVideoDetectionResult detection = FilenameVideoTypeDetector.Detect(firstName);
+            if (detection != null)
+            {
+                layout = ToSpatialStereo(detection.StereoLayout);
+            }
+        }
+
+        string tag;
+        switch (layout)
+        {
+            case SpatialStereoLayout.Mono:
+                tag = "mono";
+                break;
+            case SpatialStereoLayout.SideBySideLeftRight:
+                tag = "sbs_lr";
+                break;
+            case SpatialStereoLayout.SideBySideRightLeft:
+                tag = "sbs_rl";
+                break;
+            case SpatialStereoLayout.TopBottom:
+                tag = "tb";
+                break;
+            case SpatialStereoLayout.BottomTop:
+                tag = "bt";
+                break;
+            default:
+                tag = forceSbsStereoForFlat3DFallback ? "sbs_lr" : "unknown";
+                break;
+        }
+
+        return SanitizeBaseName(tag).ToLowerInvariant();
     }
 
     private string SanitizeBaseName(string value)
