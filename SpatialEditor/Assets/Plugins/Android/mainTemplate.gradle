@@ -1,0 +1,89 @@
+apply plugin: 'com.android.library'
+apply from: '../shared/keepUnitySymbols.gradle'
+apply from: '../shared/common.gradle'
+**APPLY_PLUGINS**
+
+dependencies {
+    implementation fileTree(
+        dir: 'libs',
+        include: ['*.jar'],
+        exclude: [
+            'kotlin-stdlib*.jar'
+        ]
+    )
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib:2.2.0'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-common:2.2.0'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk8:2.2.0'
+    implementation 'org.jetbrains.kotlin:kotlin-stdlib-jdk7:2.2.0'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-core:1.6.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-serialization-json:1.6.3'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.10.2'
+    implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2'
+    implementation 'com.google.guava:guava:33.2.1-android'
+    implementation 'androidx.concurrent:concurrent-futures:1.2.0'
+**DEPS**}
+
+configurations.all {
+    resolutionStrategy.eachDependency { details ->
+        if (details.requested.group == 'org.jetbrains.kotlin') {
+            details.useVersion '2.2.0'
+            details.because 'editor-fused is compiled with Kotlin 2.2 metadata'
+        }
+        if (details.requested.group == 'org.jetbrains.kotlinx' &&
+            details.requested.name != null &&
+            details.requested.name.startsWith('kotlinx-serialization')) {
+            details.useVersion '1.6.3'
+            details.because 'editor-fused uses kotlinx.serialization JsonKt'
+        }
+        if (details.requested.group == 'org.jetbrains.kotlinx' &&
+            details.requested.name != null &&
+            details.requested.name.startsWith('kotlinx-coroutines')) {
+            details.useVersion '1.10.2'
+            details.because 'editor-fused export path uses kotlinx.coroutines runtime'
+        }
+        if (details.requested.group == 'com.google.guava' &&
+            details.requested.name == 'listenablefuture') {
+            details.useVersion '9999.0-empty-to-avoid-conflict-with-guava'
+            details.because 'avoid duplicate ListenableFuture when full guava is included'
+        }
+    }
+}
+
+android {
+    namespace "com.unity3d.player"
+    ndkPath "**NDKPATH**"
+    ndkVersion "**NDKVERSION**"
+
+    compileSdk **APIVERSION**
+    buildToolsVersion = "**BUILDTOOLS**"
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+
+    defaultConfig {
+        minSdk **MINSDK**
+        targetSdk **TARGETSDK**
+        ndk {
+            abiFilters **ABIFILTERS**
+            debugSymbolLevel **DEBUGSYMBOLLEVEL**
+        }
+        versionCode **VERSIONCODE**
+        versionName '**VERSIONNAME**'
+        consumerProguardFiles 'proguard-unity.txt'**USER_PROGUARD**
+**DEFAULT_CONFIG_SETUP**
+    }
+
+    lint {
+        abortOnError false
+    }
+
+    androidResources {
+        noCompress = **BUILTIN_NOCOMPRESS** + unityStreamingAssets.tokenize(', ')
+        ignoreAssetsPattern = "!.svn:!.git:!.ds_store:!*.scc:!CVS:!thumbs.db:!picasa.ini:!*~"
+    }**PACKAGING**
+}
+**IL_CPP_BUILD_SETUP**
+**SOURCE_BUILD_SETUP**
+**EXTERNAL_SOURCES**

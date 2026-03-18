@@ -1,0 +1,8 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.EditorDemo" parent="Theme.MaterialComponents.DayNight.NoActionBar">
+        <item name="colorPrimary">#0E7490</item>
+        <item name="colorPrimaryVariant">#155E75</item>
+        <item name="colorSecondary">#EA580C</item>
+        <item name="android:statusBarColor" tools:targetApi="l">#155E75</item>
+    </style>
+</resources>

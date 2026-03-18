@@ -1,0 +1,401 @@
+Compiled from "ExportExecutor.kt"
+final class com.ocutech.editor.export.Media3ExportExecutor$export$2 extends kotlin.coroutines.jvm.internal.SuspendLambda implements kotlin.jvm.functions.Function2<kotlinx.coroutines.CoroutineScope, kotlin.coroutines.Continuation<? super com.ocutech.editor.export.ExportOutput>, java.lang.Object> {
+  int label;
+
+  private java.lang.Object L$0;
+
+  final com.ocutech.editor.core.PlannedProject $plan;
+
+  final com.ocutech.editor.export.Media3ExportExecutor this$0;
+
+  final java.lang.String $jobId;
+
+  final kotlin.jvm.functions.Function1<java.lang.Integer, kotlin.Unit> $onProgress;
+
+  com.ocutech.editor.export.Media3ExportExecutor$export$2(com.ocutech.editor.core.PlannedProject, com.ocutech.editor.export.Media3ExportExecutor, java.lang.String, kotlin.jvm.functions.Function1<? super java.lang.Integer, kotlin.Unit>, kotlin.coroutines.Continuation<? super com.ocutech.editor.export.Media3ExportExecutor$export$2>);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: putfield      #66                 // Field $plan:Lcom/ocutech/editor/core/PlannedProject;
+       5: aload_0
+       6: aload_2
+       7: putfield      #68                 // Field this$0:Lcom/ocutech/editor/export/Media3ExportExecutor;
+      10: aload_0
+      11: aload_3
+      12: putfield      #70                 // Field $jobId:Ljava/lang/String;
+      15: aload_0
+      16: aload         4
+      18: putfield      #72                 // Field $onProgress:Lkotlin/jvm/functions/Function1;
+      21: aload_0
+      22: iconst_2
+      23: aload         5
+      25: invokespecial #75                 // Method kotlin/coroutines/jvm/internal/SuspendLambda."<init>":(ILkotlin/coroutines/Continuation;)V
+      28: return
+
+  public final java.lang.Object invokeSuspend(java.lang.Object);
+    Code:
+       0: aload_0
+       1: getfield      #87                 // Field L$0:Ljava/lang/Object;
+       4: checkcast     #89                 // class kotlinx/coroutines/CoroutineScope
+       7: astore_2
+       8: invokestatic  #95                 // Method kotlin/coroutines/intrinsics/IntrinsicsKt.getCOROUTINE_SUSPENDED:()Ljava/lang/Object;
+      11: pop
+      12: aload_0
+      13: getfield      #97                 // Field label:I
+      16: tableswitch   { // 0 to 0
+                     0: 36
+               default: 688
+          }
+      36: aload_1
+      37: invokestatic  #103                // Method kotlin/ResultKt.throwOnFailure:(Ljava/lang/Object;)V
+      40: new           #105                // class java/util/ArrayList
+      43: dup
+      44: invokespecial #108                // Method java/util/ArrayList."<init>":()V
+      47: checkcast     #110                // class java/util/List
+      50: astore_3
+      51: aload_0
+      52: getfield      #66                 // Field $plan:Lcom/ocutech/editor/core/PlannedProject;
+      55: invokevirtual #116                // Method com/ocutech/editor/core/PlannedProject.getSource:()Lcom/ocutech/editor/model/EditorProjectDocument;
+      58: invokevirtual #122                // Method com/ocutech/editor/model/EditorProjectDocument.getExport:()Lcom/ocutech/editor/model/ExportSpec;
+      61: invokevirtual #128                // Method com/ocutech/editor/model/ExportSpec.getOutputUri:()Ljava/lang/String;
+      64: astore        4
+      66: new           #130                // class java/io/File
+      69: dup
+      70: aload_0
+      71: getfield      #68                 // Field this$0:Lcom/ocutech/editor/export/Media3ExportExecutor;
+      74: invokestatic  #134                // Method com/ocutech/editor/export/Media3ExportExecutor.access$getContext$p:(Lcom/ocutech/editor/export/Media3ExportExecutor;)Landroid/content/Context;
+      77: invokevirtual #140                // Method android/content/Context.getCacheDir:()Ljava/io/File;
+      80: aload_0
+      81: getfield      #70                 // Field $jobId:Ljava/lang/String;
+      84: invokedynamic #152,  0            // InvokeDynamic #0:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+      89: invokespecial #155                // Method java/io/File."<init>":(Ljava/io/File;Ljava/lang/String;)V
+      92: astore        5
+      94: aload         5
+      96: invokevirtual #159                // Method java/io/File.exists:()Z
+      99: ifeq          108
+     102: aload         5
+     104: invokevirtual #162                // Method java/io/File.delete:()Z
+     107: pop
+     108: aload_0
+     109: getfield      #68                 // Field this$0:Lcom/ocutech/editor/export/Media3ExportExecutor;
+     112: aload_0
+     113: getfield      #66                 // Field $plan:Lcom/ocutech/editor/core/PlannedProject;
+     116: aload_3
+     117: invokestatic  #168                // Method com/ocutech/editor/export/Media3ExportExecutor.access$buildComposition:(Lcom/ocutech/editor/export/Media3ExportExecutor;Lcom/ocutech/editor/core/PlannedProject;Ljava/util/List;)Landroidx/media3/transformer/Composition;
+     120: astore        6
+     122: new           #170                // class java/util/concurrent/atomic/AtomicBoolean
+     125: dup
+     126: iconst_0
+     127: invokespecial #173                // Method java/util/concurrent/atomic/AtomicBoolean."<init>":(Z)V
+     130: astore        7
+     132: new           #175                // class java/util/concurrent/atomic/AtomicReference
+     135: dup
+     136: aconst_null
+     137: invokespecial #177                // Method java/util/concurrent/atomic/AtomicReference."<init>":(Ljava/lang/Object;)V
+     140: astore        8
+     142: new           #179                // class androidx/media3/transformer/ProgressHolder
+     145: dup
+     146: invokespecial #180                // Method androidx/media3/transformer/ProgressHolder."<init>":()V
+     149: astore        9
+     151: new           #42                 // class androidx/media3/transformer/Transformer$Builder
+     154: dup
+     155: aload_0
+     156: getfield      #68                 // Field this$0:Lcom/ocutech/editor/export/Media3ExportExecutor;
+     159: invokestatic  #134                // Method com/ocutech/editor/export/Media3ExportExecutor.access$getContext$p:(Lcom/ocutech/editor/export/Media3ExportExecutor;)Landroid/content/Context;
+     162: invokespecial #183                // Method androidx/media3/transformer/Transformer$Builder."<init>":(Landroid/content/Context;)V
+     165: aload_0
+     166: getfield      #66                 // Field $plan:Lcom/ocutech/editor/core/PlannedProject;
+     169: invokevirtual #116                // Method com/ocutech/editor/core/PlannedProject.getSource:()Lcom/ocutech/editor/model/EditorProjectDocument;
+     172: invokevirtual #122                // Method com/ocutech/editor/model/EditorProjectDocument.getExport:()Lcom/ocutech/editor/model/ExportSpec;
+     175: invokevirtual #186                // Method com/ocutech/editor/model/ExportSpec.getAudioMimeType:()Ljava/lang/String;
+     178: invokevirtual #190                // Method androidx/media3/transformer/Transformer$Builder.setAudioMimeType:(Ljava/lang/String;)Landroidx/media3/transformer/Transformer$Builder;
+     181: aload_0
+     182: getfield      #66                 // Field $plan:Lcom/ocutech/editor/core/PlannedProject;
+     185: invokevirtual #116                // Method com/ocutech/editor/core/PlannedProject.getSource:()Lcom/ocutech/editor/model/EditorProjectDocument;
+     188: invokevirtual #122                // Method com/ocutech/editor/model/EditorProjectDocument.getExport:()Lcom/ocutech/editor/model/ExportSpec;
+     191: invokevirtual #193                // Method com/ocutech/editor/model/ExportSpec.getVideoMimeType:()Ljava/lang/String;
+     194: invokevirtual #196                // Method androidx/media3/transformer/Transformer$Builder.setVideoMimeType:(Ljava/lang/String;)Landroidx/media3/transformer/Transformer$Builder;
+     197: iconst_1
+     198: invokevirtual #200                // Method androidx/media3/transformer/Transformer$Builder.setEnsureFileStartsOnVideoFrameEnabled:(Z)Landroidx/media3/transformer/Transformer$Builder;
+     201: ldc2_w        #201                // long 1500l
+     204: invokevirtual #206                // Method androidx/media3/transformer/Transformer$Builder.setMaxDelayBetweenMuxerSamplesMs:(J)Landroidx/media3/transformer/Transformer$Builder;
+     207: invokevirtual #210                // Method androidx/media3/transformer/Transformer$Builder.build:()Landroidx/media3/transformer/Transformer;
+     210: dup
+     211: ldc           #212                // String build(...)
+     213: invokestatic  #218                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     216: astore        10
+     218: aload_0
+     219: getfield      #68                 // Field this$0:Lcom/ocutech/editor/export/Media3ExportExecutor;
+     222: invokestatic  #222                // Method com/ocutech/editor/export/Media3ExportExecutor.access$getActiveTransformers$p:(Lcom/ocutech/editor/export/Media3ExportExecutor;)Ljava/util/concurrent/ConcurrentHashMap;
+     225: checkcast     #224                // class java/util/Map
+     228: aload_0
+     229: getfield      #70                 // Field $jobId:Ljava/lang/String;
+     232: aload         10
+     234: invokeinterface #228,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+     239: pop
+     240: nop
+     241: new           #230                // class com/ocutech/editor/export/Media3ExportExecutor$export$2$listener$1
+     244: dup
+     245: aload         7
+     247: aload         8
+     249: aload_3
+     250: invokespecial #233                // Method com/ocutech/editor/export/Media3ExportExecutor$export$2$listener$1."<init>":(Ljava/util/concurrent/atomic/AtomicBoolean;Ljava/util/concurrent/atomic/AtomicReference;Ljava/util/List;)V
+     253: astore        11
+     255: aload         10
+     257: aload         11
+     259: checkcast     #47                 // class androidx/media3/transformer/Transformer$Listener
+     262: invokevirtual #237                // Method androidx/media3/transformer/Transformer.addListener:(Landroidx/media3/transformer/Transformer$Listener;)V
+     265: nop
+     266: aload         10
+     268: aload         6
+     270: aload         5
+     272: invokevirtual #240                // Method java/io/File.getAbsolutePath:()Ljava/lang/String;
+     275: invokevirtual #244                // Method androidx/media3/transformer/Transformer.start:(Landroidx/media3/transformer/Composition;Ljava/lang/String;)V
+     278: aload_2
+     279: invokestatic  #254                // Method kotlinx/coroutines/CoroutineScopeKt.isActive:(Lkotlinx/coroutines/CoroutineScope;)Z
+     282: ifeq          342
+     285: aload         7
+     287: invokevirtual #257                // Method java/util/concurrent/atomic/AtomicBoolean.get:()Z
+     290: ifne          342
+     293: aload         10
+     295: aload         9
+     297: invokevirtual #261                // Method androidx/media3/transformer/Transformer.getProgress:(Landroidx/media3/transformer/ProgressHolder;)I
+     300: istore        12
+     302: iload         12
+     304: iconst_2
+     305: if_icmpne     332
+     308: aload_0
+     309: getfield      #72                 // Field $onProgress:Lkotlin/jvm/functions/Function1;
+     312: aload         9
+     314: getfield      #264                // Field androidx/media3/transformer/ProgressHolder.progress:I
+     317: iconst_0
+     318: bipush        100
+     320: invokestatic  #270                // Method kotlin/ranges/RangesKt.coerceIn:(III)I
+     323: invokestatic  #276                // Method kotlin/coroutines/jvm/internal/Boxing.boxInt:(I)Ljava/lang/Integer;
+     326: invokeinterface #281,  2          // InterfaceMethod kotlin/jvm/functions/Function1.invoke:(Ljava/lang/Object;)Ljava/lang/Object;
+     331: pop
+     332: aload_0
+     333: getfield      #68                 // Field this$0:Lcom/ocutech/editor/export/Media3ExportExecutor;
+     336: invokestatic  #285                // Method com/ocutech/editor/export/Media3ExportExecutor.access$sleepForProgressPolling:(Lcom/ocutech/editor/export/Media3ExportExecutor;)V
+     339: goto          278
+     342: aload         10
+     344: aload         11
+     346: checkcast     #47                 // class androidx/media3/transformer/Transformer$Listener
+     349: invokevirtual #288                // Method androidx/media3/transformer/Transformer.removeListener:(Landroidx/media3/transformer/Transformer$Listener;)V
+     352: goto          370
+     355: astore        12
+     357: aload         10
+     359: aload         11
+     361: checkcast     #47                 // class androidx/media3/transformer/Transformer$Listener
+     364: invokevirtual #288                // Method androidx/media3/transformer/Transformer.removeListener:(Landroidx/media3/transformer/Transformer$Listener;)V
+     367: aload         12
+     369: athrow
+     370: aload_2
+     371: invokestatic  #254                // Method kotlinx/coroutines/CoroutineScopeKt.isActive:(Lkotlinx/coroutines/CoroutineScope;)Z
+     374: ifne          388
+     377: new           #85                 // class java/util/concurrent/CancellationException
+     380: dup
+     381: ldc_w         #290                // String Export coroutine is no longer active.
+     384: invokespecial #293                // Method java/util/concurrent/CancellationException."<init>":(Ljava/lang/String;)V
+     387: athrow
+     388: aload         8
+     390: invokevirtual #295                // Method java/util/concurrent/atomic/AtomicReference.get:()Ljava/lang/Object;
+     393: checkcast     #83                 // class java/lang/Throwable
+     396: dup
+     397: ifnull        412
+     400: astore        13
+     402: aload         13
+     404: astore        14
+     406: iconst_0
+     407: istore        15
+     409: aload         14
+     411: athrow
+     412: pop
+     413: aload         7
+     415: invokevirtual #257                // Method java/util/concurrent/atomic/AtomicBoolean.get:()Z
+     418: ifne          432
+     421: new           #297                // class java/lang/IllegalStateException
+     424: dup
+     425: ldc_w         #299                // String Transformer finished without terminal callback.
+     428: invokespecial #300                // Method java/lang/IllegalStateException."<init>":(Ljava/lang/String;)V
+     431: athrow
+     432: aload         5
+     434: invokevirtual #159                // Method java/io/File.exists:()Z
+     437: ifeq          450
+     440: aload         5
+     442: invokevirtual #304                // Method java/io/File.length:()J
+     445: lconst_0
+     446: lcmp
+     447: ifgt          461
+     450: new           #297                // class java/lang/IllegalStateException
+     453: dup
+     454: ldc_w         #306                // String Transformer completed without creating output file.
+     457: invokespecial #300                // Method java/lang/IllegalStateException."<init>":(Ljava/lang/String;)V
+     460: athrow
+     461: aload_0
+     462: getfield      #68                 // Field this$0:Lcom/ocutech/editor/export/Media3ExportExecutor;
+     465: aload         5
+     467: aload         4
+     469: invokestatic  #310                // Method com/ocutech/editor/export/Media3ExportExecutor.access$persistOutput:(Lcom/ocutech/editor/export/Media3ExportExecutor;Ljava/io/File;Ljava/lang/String;)Ljava/lang/String;
+     472: astore        12
+     474: aload_0
+     475: getfield      #72                 // Field $onProgress:Lkotlin/jvm/functions/Function1;
+     478: bipush        100
+     480: invokestatic  #276                // Method kotlin/coroutines/jvm/internal/Boxing.boxInt:(I)Ljava/lang/Integer;
+     483: invokeinterface #281,  2          // InterfaceMethod kotlin/jvm/functions/Function1.invoke:(Ljava/lang/Object;)Ljava/lang/Object;
+     488: pop
+     489: new           #312                // class com/ocutech/editor/export/ExportOutput
+     492: dup
+     493: aload         12
+     495: aload_3
+     496: invokespecial #315                // Method com/ocutech/editor/export/ExportOutput."<init>":(Ljava/lang/String;Ljava/util/List;)V
+     499: astore        11
+     501: aload_0
+     502: getfield      #68                 // Field this$0:Lcom/ocutech/editor/export/Media3ExportExecutor;
+     505: invokestatic  #222                // Method com/ocutech/editor/export/Media3ExportExecutor.access$getActiveTransformers$p:(Lcom/ocutech/editor/export/Media3ExportExecutor;)Ljava/util/concurrent/ConcurrentHashMap;
+     508: aload_0
+     509: getfield      #70                 // Field $jobId:Ljava/lang/String;
+     512: invokevirtual #320                // Method java/util/concurrent/ConcurrentHashMap.remove:(Ljava/lang/Object;)Ljava/lang/Object;
+     515: pop
+     516: aload_2
+     517: astore        12
+     519: nop
+     520: getstatic     #326                // Field kotlin/Result.Companion:Lkotlin/Result$Companion;
+     523: pop
+     524: aload         12
+     526: astore        13
+     528: iconst_0
+     529: istore        14
+     531: aload         5
+     533: invokevirtual #162                // Method java/io/File.delete:()Z
+     536: invokestatic  #330                // Method kotlin/coroutines/jvm/internal/Boxing.boxBoolean:(Z)Ljava/lang/Boolean;
+     539: invokestatic  #333                // Method kotlin/Result."constructor-impl":(Ljava/lang/Object;)Ljava/lang/Object;
+     542: astore        13
+     544: goto          563
+     547: astore        14
+     549: getstatic     #326                // Field kotlin/Result.Companion:Lkotlin/Result$Companion;
+     552: pop
+     553: aload         14
+     555: invokestatic  #337                // Method kotlin/ResultKt.createFailure:(Ljava/lang/Throwable;)Ljava/lang/Object;
+     558: invokestatic  #333                // Method kotlin/Result."constructor-impl":(Ljava/lang/Object;)Ljava/lang/Object;
+     561: astore        13
+     563: goto          685
+     566: astore        12
+     568: aload_2
+     569: astore        13
+     571: nop
+     572: getstatic     #326                // Field kotlin/Result.Companion:Lkotlin/Result$Companion;
+     575: pop
+     576: aload         13
+     578: astore        14
+     580: iconst_0
+     581: istore        15
+     583: aload         10
+     585: invokevirtual #340                // Method androidx/media3/transformer/Transformer.cancel:()V
+     588: getstatic     #346                // Field kotlin/Unit.INSTANCE:Lkotlin/Unit;
+     591: invokestatic  #333                // Method kotlin/Result."constructor-impl":(Ljava/lang/Object;)Ljava/lang/Object;
+     594: astore        14
+     596: goto          615
+     599: astore        15
+     601: getstatic     #326                // Field kotlin/Result.Companion:Lkotlin/Result$Companion;
+     604: pop
+     605: aload         15
+     607: invokestatic  #337                // Method kotlin/ResultKt.createFailure:(Ljava/lang/Throwable;)Ljava/lang/Object;
+     610: invokestatic  #333                // Method kotlin/Result."constructor-impl":(Ljava/lang/Object;)Ljava/lang/Object;
+     613: astore        14
+     615: aload         12
+     617: athrow
+     618: astore        12
+     620: aload_0
+     621: getfield      #68                 // Field this$0:Lcom/ocutech/editor/export/Media3ExportExecutor;
+     624: invokestatic  #222                // Method com/ocutech/editor/export/Media3ExportExecutor.access$getActiveTransformers$p:(Lcom/ocutech/editor/export/Media3ExportExecutor;)Ljava/util/concurrent/ConcurrentHashMap;
+     627: aload_0
+     628: getfield      #70                 // Field $jobId:Ljava/lang/String;
+     631: invokevirtual #320                // Method java/util/concurrent/ConcurrentHashMap.remove:(Ljava/lang/Object;)Ljava/lang/Object;
+     634: pop
+     635: aload_2
+     636: astore        13
+     638: nop
+     639: getstatic     #326                // Field kotlin/Result.Companion:Lkotlin/Result$Companion;
+     642: pop
+     643: aload         13
+     645: astore        14
+     647: iconst_0
+     648: istore        15
+     650: aload         5
+     652: invokevirtual #162                // Method java/io/File.delete:()Z
+     655: invokestatic  #330                // Method kotlin/coroutines/jvm/internal/Boxing.boxBoolean:(Z)Ljava/lang/Boolean;
+     658: invokestatic  #333                // Method kotlin/Result."constructor-impl":(Ljava/lang/Object;)Ljava/lang/Object;
+     661: astore        14
+     663: goto          682
+     666: astore        15
+     668: getstatic     #326                // Field kotlin/Result.Companion:Lkotlin/Result$Companion;
+     671: pop
+     672: aload         15
+     674: invokestatic  #337                // Method kotlin/ResultKt.createFailure:(Ljava/lang/Throwable;)Ljava/lang/Object;
+     677: invokestatic  #333                // Method kotlin/Result."constructor-impl":(Ljava/lang/Object;)Ljava/lang/Object;
+     680: astore        14
+     682: aload         12
+     684: athrow
+     685: aload         11
+     687: areturn
+     688: new           #297                // class java/lang/IllegalStateException
+     691: dup
+     692: ldc_w         #348                // String call to \'resume\' before \'invoke\' with coroutine
+     695: invokespecial #300                // Method java/lang/IllegalStateException."<init>":(Ljava/lang/String;)V
+     698: athrow
+    Exception table:
+       from    to  target type
+         265   342   355   any
+         355   357   355   any
+         519   544   547   Class java/lang/Throwable
+         571   596   599   Class java/lang/Throwable
+         240   501   566   Class java/util/concurrent/CancellationException
+         638   663   666   Class java/lang/Throwable
+         240   501   618   any
+         566   618   618   any
+         618   620   618   any
+
+  public final kotlin.coroutines.Continuation<kotlin.Unit> create(java.lang.Object, kotlin.coroutines.Continuation<?>);
+    Code:
+       0: new           #2                  // class com/ocutech/editor/export/Media3ExportExecutor$export$2
+       3: dup
+       4: aload_0
+       5: getfield      #66                 // Field $plan:Lcom/ocutech/editor/core/PlannedProject;
+       8: aload_0
+       9: getfield      #68                 // Field this$0:Lcom/ocutech/editor/export/Media3ExportExecutor;
+      12: aload_0
+      13: getfield      #70                 // Field $jobId:Ljava/lang/String;
+      16: aload_0
+      17: getfield      #72                 // Field $onProgress:Lkotlin/jvm/functions/Function1;
+      20: aload_2
+      21: invokespecial #382                // Method "<init>":(Lcom/ocutech/editor/core/PlannedProject;Lcom/ocutech/editor/export/Media3ExportExecutor;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)V
+      24: astore_3
+      25: aload_3
+      26: aload_1
+      27: putfield      #87                 // Field L$0:Ljava/lang/Object;
+      30: aload_3
+      31: checkcast     #384                // class kotlin/coroutines/Continuation
+      34: areturn
+
+  public final java.lang.Object invoke(kotlinx.coroutines.CoroutineScope, kotlin.coroutines.Continuation<? super com.ocutech.editor.export.ExportOutput>);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokevirtual #388                // Method create:(Ljava/lang/Object;Lkotlin/coroutines/Continuation;)Lkotlin/coroutines/Continuation;
+       6: checkcast     #2                  // class com/ocutech/editor/export/Media3ExportExecutor$export$2
+       9: getstatic     #346                // Field kotlin/Unit.INSTANCE:Lkotlin/Unit;
+      12: invokevirtual #390                // Method invokeSuspend:(Ljava/lang/Object;)Ljava/lang/Object;
+      15: areturn
+
+  public java.lang.Object invoke(java.lang.Object, java.lang.Object);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: checkcast     #89                 // class kotlinx/coroutines/CoroutineScope
+       5: aload_2
+       6: checkcast     #384                // class kotlin/coroutines/Continuation
+       9: invokevirtual #394                // Method invoke:(Lkotlinx/coroutines/CoroutineScope;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+      12: areturn
+}

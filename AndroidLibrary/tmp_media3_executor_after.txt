@@ -1,0 +1,1607 @@
+Compiled from "ExportExecutor.kt"
+public final class com.ocutech.editor.export.Media3ExportExecutor implements com.ocutech.editor.export.ExportExecutor {
+  private final android.content.Context context;
+
+  private final com.ocutech.editor.export.ExportRuntimeConfig runtimeConfig;
+
+  private final java.util.concurrent.ConcurrentHashMap<java.lang.String, androidx.media3.transformer.Transformer> activeTransformers;
+
+  public com.ocutech.editor.export.Media3ExportExecutor(android.content.Context, com.ocutech.editor.export.ExportRuntimeConfig);
+    Code:
+       0: aload_1
+       1: ldc           #112                // String context
+       3: invokestatic  #118                // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_2
+       7: ldc           #119                // String runtimeConfig
+       9: invokestatic  #118                // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+      12: aload_0
+      13: invokespecial #122                // Method java/lang/Object."<init>":()V
+      16: aload_0
+      17: aload_1
+      18: putfield      #124                // Field context:Landroid/content/Context;
+      21: aload_0
+      22: aload_2
+      23: putfield      #126                // Field runtimeConfig:Lcom/ocutech/editor/export/ExportRuntimeConfig;
+      26: aload_0
+      27: new           #128                // class java/util/concurrent/ConcurrentHashMap
+      30: dup
+      31: invokespecial #129                // Method java/util/concurrent/ConcurrentHashMap."<init>":()V
+      34: putfield      #131                // Field activeTransformers:Ljava/util/concurrent/ConcurrentHashMap;
+      37: return
+
+  public java.lang.Object export(java.lang.String, com.ocutech.editor.core.PlannedProject, kotlin.jvm.functions.Function1<? super java.lang.Integer, kotlin.Unit>, kotlin.coroutines.Continuation<? super com.ocutech.editor.export.ExportOutput>);
+    Code:
+       0: invokestatic  #140                // Method kotlinx/coroutines/Dispatchers.getMain:()Lkotlinx/coroutines/MainCoroutineDispatcher;
+       3: invokevirtual #145                // Method kotlinx/coroutines/MainCoroutineDispatcher.getImmediate:()Lkotlinx/coroutines/MainCoroutineDispatcher;
+       6: checkcast     #147                // class kotlin/coroutines/CoroutineContext
+       9: new           #149                // class com/ocutech/editor/export/Media3ExportExecutor$export$2
+      12: dup
+      13: aload_2
+      14: aload_0
+      15: aload_1
+      16: aload_3
+      17: aconst_null
+      18: invokespecial #152                // Method com/ocutech/editor/export/Media3ExportExecutor$export$2."<init>":(Lcom/ocutech/editor/core/PlannedProject;Lcom/ocutech/editor/export/Media3ExportExecutor;Ljava/lang/String;Lkotlin/jvm/functions/Function1;Lkotlin/coroutines/Continuation;)V
+      21: checkcast     #154                // class kotlin/jvm/functions/Function2
+      24: aload         4
+      26: invokestatic  #160                // Method kotlinx/coroutines/BuildersKt.withContext:(Lkotlin/coroutines/CoroutineContext;Lkotlin/jvm/functions/Function2;Lkotlin/coroutines/Continuation;)Ljava/lang/Object;
+      29: areturn
+
+  public void cancel(java.lang.String);
+    Code:
+       0: aload_1
+       1: ldc           #166                // String jobId
+       3: invokestatic  #118                // Method kotlin/jvm/internal/Intrinsics.checkNotNullParameter:(Ljava/lang/Object;Ljava/lang/String;)V
+       6: aload_0
+       7: getfield      #131                // Field activeTransformers:Ljava/util/concurrent/ConcurrentHashMap;
+      10: aload_1
+      11: invokevirtual #170                // Method java/util/concurrent/ConcurrentHashMap.get:(Ljava/lang/Object;)Ljava/lang/Object;
+      14: checkcast     #172                // class androidx/media3/transformer/Transformer
+      17: dup
+      18: ifnull        27
+      21: invokevirtual #174                // Method androidx/media3/transformer/Transformer.cancel:()V
+      24: goto          28
+      27: pop
+      28: return
+
+  private final androidx.media3.transformer.Composition buildComposition(com.ocutech.editor.core.PlannedProject, java.util.List<com.ocutech.editor.model.ValidationIssue>);
+    Code:
+       0: aload_1
+       1: invokevirtual #182                // Method com/ocutech/editor/core/PlannedProject.getSource:()Lcom/ocutech/editor/model/EditorProjectDocument;
+       4: invokevirtual #188                // Method com/ocutech/editor/model/EditorProjectDocument.getAssets:()Ljava/util/List;
+       7: checkcast     #190                // class java/lang/Iterable
+      10: astore        4
+      12: iconst_0
+      13: istore        5
+      15: aload         4
+      17: bipush        10
+      19: invokestatic  #196                // Method kotlin/collections/CollectionsKt.collectionSizeOrDefault:(Ljava/lang/Iterable;I)I
+      22: invokestatic  #202                // Method kotlin/collections/MapsKt.mapCapacity:(I)I
+      25: bipush        16
+      27: invokestatic  #208                // Method kotlin/ranges/RangesKt.coerceAtLeast:(II)I
+      30: istore        6
+      32: aload         4
+      34: astore        7
+      36: new           #210                // class java/util/LinkedHashMap
+      39: dup
+      40: iload         6
+      42: invokespecial #213                // Method java/util/LinkedHashMap."<init>":(I)V
+      45: checkcast     #215                // class java/util/Map
+      48: astore        8
+      50: iconst_0
+      51: istore        9
+      53: aload         7
+      55: invokeinterface #219,  1          // InterfaceMethod java/lang/Iterable.iterator:()Ljava/util/Iterator;
+      60: astore        10
+      62: aload         10
+      64: invokeinterface #227,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+      69: ifeq          114
+      72: aload         10
+      74: invokeinterface #231,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+      79: astore        11
+      81: aload         8
+      83: aload         11
+      85: checkcast     #233                // class com/ocutech/editor/model/AssetRef
+      88: astore        12
+      90: astore        23
+      92: iconst_0
+      93: istore        13
+      95: aload         12
+      97: invokevirtual #237                // Method com/ocutech/editor/model/AssetRef.getId:()Ljava/lang/String;
+     100: aload         23
+     102: swap
+     103: aload         11
+     105: invokeinterface #241,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+     110: pop
+     111: goto          62
+     114: aload         8
+     116: nop
+     117: astore_3
+     118: aload_1
+     119: invokevirtual #182                // Method com/ocutech/editor/core/PlannedProject.getSource:()Lcom/ocutech/editor/model/EditorProjectDocument;
+     122: invokevirtual #244                // Method com/ocutech/editor/model/EditorProjectDocument.getOverlays:()Ljava/util/List;
+     125: checkcast     #190                // class java/lang/Iterable
+     128: astore        5
+     130: iconst_0
+     131: istore        6
+     133: aload         5
+     135: bipush        10
+     137: invokestatic  #196                // Method kotlin/collections/CollectionsKt.collectionSizeOrDefault:(Ljava/lang/Iterable;I)I
+     140: invokestatic  #202                // Method kotlin/collections/MapsKt.mapCapacity:(I)I
+     143: bipush        16
+     145: invokestatic  #208                // Method kotlin/ranges/RangesKt.coerceAtLeast:(II)I
+     148: istore        7
+     150: aload         5
+     152: astore        8
+     154: new           #210                // class java/util/LinkedHashMap
+     157: dup
+     158: iload         7
+     160: invokespecial #213                // Method java/util/LinkedHashMap."<init>":(I)V
+     163: checkcast     #215                // class java/util/Map
+     166: astore        9
+     168: iconst_0
+     169: istore        10
+     171: aload         8
+     173: invokeinterface #219,  1          // InterfaceMethod java/lang/Iterable.iterator:()Ljava/util/Iterator;
+     178: astore        11
+     180: aload         11
+     182: invokeinterface #227,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     187: ifeq          232
+     190: aload         11
+     192: invokeinterface #231,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     197: astore        12
+     199: aload         9
+     201: aload         12
+     203: checkcast     #246                // class com/ocutech/editor/model/OverlaySpec
+     206: astore        13
+     208: astore        23
+     210: iconst_0
+     211: istore        14
+     213: aload         13
+     215: invokevirtual #247                // Method com/ocutech/editor/model/OverlaySpec.getId:()Ljava/lang/String;
+     218: aload         23
+     220: swap
+     221: aload         12
+     223: invokeinterface #241,  3          // InterfaceMethod java/util/Map.put:(Ljava/lang/Object;Ljava/lang/Object;)Ljava/lang/Object;
+     228: pop
+     229: goto          180
+     232: aload         9
+     234: nop
+     235: astore        4
+     237: aload_1
+     238: invokevirtual #250                // Method com/ocutech/editor/core/PlannedProject.getVisualSegments:()Ljava/util/List;
+     241: checkcast     #190                // class java/lang/Iterable
+     244: astore        6
+     246: iconst_0
+     247: istore        7
+     249: aload         6
+     251: astore        8
+     253: new           #252                // class java/util/ArrayList
+     256: dup
+     257: invokespecial #253                // Method java/util/ArrayList."<init>":()V
+     260: checkcast     #255                // class java/util/Collection
+     263: astore        9
+     265: iconst_0
+     266: istore        10
+     268: aload         8
+     270: astore        11
+     272: iconst_0
+     273: istore        12
+     275: aload         11
+     277: invokeinterface #219,  1          // InterfaceMethod java/lang/Iterable.iterator:()Ljava/util/Iterator;
+     282: astore        13
+     284: aload         13
+     286: invokeinterface #227,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     291: ifeq          439
+     294: aload         13
+     296: invokeinterface #231,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     301: astore        14
+     303: aload         14
+     305: astore        15
+     307: iconst_0
+     308: istore        16
+     310: aload         15
+     312: checkcast     #257                // class com/ocutech/editor/core/PlannedVisualSegment
+     315: astore        17
+     317: iconst_0
+     318: istore        18
+     320: aload_3
+     321: aload         17
+     323: invokevirtual #260                // Method com/ocutech/editor/core/PlannedVisualSegment.getAssetId:()Ljava/lang/String;
+     326: invokeinterface #261,  2          // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;
+     331: checkcast     #233                // class com/ocutech/editor/model/AssetRef
+     334: dup
+     335: ifnonnull     343
+     338: pop
+     339: aconst_null
+     340: goto          412
+     343: astore        19
+     345: iconst_2
+     346: anewarray     #263                // class com/ocutech/editor/model/AssetType
+     349: astore        20
+     351: aload         20
+     353: iconst_0
+     354: getstatic     #267                // Field com/ocutech/editor/model/AssetType.VIDEO:Lcom/ocutech/editor/model/AssetType;
+     357: aastore
+     358: aload         20
+     360: iconst_1
+     361: getstatic     #270                // Field com/ocutech/editor/model/AssetType.IMAGE:Lcom/ocutech/editor/model/AssetType;
+     364: aastore
+     365: aload         20
+     367: invokestatic  #276                // Method kotlin/collections/SetsKt.setOf:([Ljava/lang/Object;)Ljava/util/Set;
+     370: aload         19
+     372: invokevirtual #280                // Method com/ocutech/editor/model/AssetRef.getType:()Lcom/ocutech/editor/model/AssetType;
+     375: invokeinterface #286,  2          // InterfaceMethod java/util/Set.contains:(Ljava/lang/Object;)Z
+     380: ifne          387
+     383: aconst_null
+     384: goto          412
+     387: aload_0
+     388: aload         19
+     390: invokevirtual #291                // Method com/ocutech/editor/model/AssetRef.getUri:()Ljava/lang/String;
+     393: aload         17
+     395: aload         4
+     397: aload_2
+     398: aload_1
+     399: invokevirtual #182                // Method com/ocutech/editor/core/PlannedProject.getSource:()Lcom/ocutech/editor/model/EditorProjectDocument;
+     402: invokevirtual #295                // Method com/ocutech/editor/model/EditorProjectDocument.getExport:()Lcom/ocutech/editor/model/ExportSpec;
+     405: invokevirtual #301                // Method com/ocutech/editor/model/ExportSpec.getFps:()I
+     408: invokespecial #304                // Method buildVisualEditedItem:(Ljava/lang/String;Lcom/ocutech/editor/core/PlannedVisualSegment;Ljava/util/Map;Ljava/util/List;I)Landroidx/media3/transformer/EditedMediaItem;
+     411: nop
+     412: dup
+     413: ifnull        434
+     416: astore        21
+     418: iconst_0
+     419: istore        22
+     421: aload         9
+     423: aload         21
+     425: invokeinterface #307,  2          // InterfaceMethod java/util/Collection.add:(Ljava/lang/Object;)Z
+     430: pop
+     431: goto          435
+     434: pop
+     435: nop
+     436: goto          284
+     439: nop
+     440: aload         9
+     442: checkcast     #221                // class java/util/List
+     445: nop
+     446: astore        5
+     448: aload         5
+     450: invokeinterface #310,  1          // InterfaceMethod java/util/List.isEmpty:()Z
+     455: ifeq          469
+     458: new           #312                // class java/lang/IllegalStateException
+     461: dup
+     462: ldc_w         #314                // String No valid visual segments available for export.
+     465: invokespecial #316                // Method java/lang/IllegalStateException."<init>":(Ljava/lang/String;)V
+     468: athrow
+     469: new           #252                // class java/util/ArrayList
+     472: dup
+     473: invokespecial #253                // Method java/util/ArrayList."<init>":()V
+     476: checkcast     #221                // class java/util/List
+     479: astore        6
+     481: nop
+     482: aload         6
+     484: checkcast     #255                // class java/util/Collection
+     487: new           #104                // class androidx/media3/transformer/EditedMediaItemSequence$Builder
+     490: dup
+     491: aload         5
+     493: invokespecial #319                // Method androidx/media3/transformer/EditedMediaItemSequence$Builder."<init>":(Ljava/util/List;)V
+     496: iconst_1
+     497: invokevirtual #323                // Method androidx/media3/transformer/EditedMediaItemSequence$Builder.experimentalSetForceVideoTrack:(Z)Landroidx/media3/transformer/EditedMediaItemSequence$Builder;
+     500: invokevirtual #327                // Method androidx/media3/transformer/EditedMediaItemSequence$Builder.build:()Landroidx/media3/transformer/EditedMediaItemSequence;
+     503: invokeinterface #307,  2          // InterfaceMethod java/util/Collection.add:(Ljava/lang/Object;)Z
+     508: pop
+     509: aload_1
+     510: invokevirtual #330                // Method com/ocutech/editor/core/PlannedProject.getAudioLanes:()Ljava/util/List;
+     513: checkcast     #190                // class java/lang/Iterable
+     516: astore        7
+     518: iconst_0
+     519: istore        8
+     521: aload         7
+     523: invokeinterface #219,  1          // InterfaceMethod java/lang/Iterable.iterator:()Ljava/util/Iterator;
+     528: astore        9
+     530: aload         9
+     532: invokeinterface #227,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     537: ifeq          672
+     540: aload         9
+     542: invokeinterface #231,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     547: astore        10
+     549: aload         10
+     551: checkcast     #332                // class com/ocutech/editor/core/PlannedAudioLane
+     554: astore        11
+     556: iconst_0
+     557: istore        12
+     559: aload_3
+     560: aload         11
+     562: invokevirtual #333                // Method com/ocutech/editor/core/PlannedAudioLane.getAssetId:()Ljava/lang/String;
+     565: invokeinterface #261,  2          // InterfaceMethod java/util/Map.get:(Ljava/lang/Object;)Ljava/lang/Object;
+     570: checkcast     #233                // class com/ocutech/editor/model/AssetRef
+     573: dup
+     574: ifnonnull     581
+     577: pop
+     578: goto          668
+     581: astore        13
+     583: aload         13
+     585: invokevirtual #280                // Method com/ocutech/editor/model/AssetRef.getType:()Lcom/ocutech/editor/model/AssetType;
+     588: getstatic     #336                // Field com/ocutech/editor/model/AssetType.AUDIO:Lcom/ocutech/editor/model/AssetType;
+     591: if_acmpne     668
+     594: aload_0
+     595: aload         13
+     597: invokevirtual #291                // Method com/ocutech/editor/model/AssetRef.getUri:()Ljava/lang/String;
+     600: aload         11
+     602: aload_1
+     603: invokevirtual #340                // Method com/ocutech/editor/core/PlannedProject.getNormalizedDurationMs:()J
+     606: invokespecial #343                // Method buildAudioEditedItem:(Ljava/lang/String;Lcom/ocutech/editor/core/PlannedAudioLane;J)Landroidx/media3/transformer/EditedMediaItem;
+     609: astore        14
+     611: new           #104                // class androidx/media3/transformer/EditedMediaItemSequence$Builder
+     614: dup
+     615: aload         14
+     617: invokestatic  #347                // Method kotlin/collections/CollectionsKt.listOf:(Ljava/lang/Object;)Ljava/util/List;
+     620: invokespecial #319                // Method androidx/media3/transformer/EditedMediaItemSequence$Builder."<init>":(Ljava/util/List;)V
+     623: iconst_1
+     624: invokevirtual #350                // Method androidx/media3/transformer/EditedMediaItemSequence$Builder.experimentalSetForceAudioTrack:(Z)Landroidx/media3/transformer/EditedMediaItemSequence$Builder;
+     627: dup
+     628: ldc_w         #352                // String experimentalSetForceAudioTrack(...)
+     631: invokestatic  #355                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     634: astore        15
+     636: aload         11
+     638: invokevirtual #358                // Method com/ocutech/editor/core/PlannedAudioLane.getLoop:()Z
+     641: ifeq          651
+     644: aload         15
+     646: iconst_1
+     647: invokevirtual #361                // Method androidx/media3/transformer/EditedMediaItemSequence$Builder.setIsLooping:(Z)Landroidx/media3/transformer/EditedMediaItemSequence$Builder;
+     650: pop
+     651: aload         6
+     653: checkcast     #255                // class java/util/Collection
+     656: aload         15
+     658: invokevirtual #327                // Method androidx/media3/transformer/EditedMediaItemSequence$Builder.build:()Landroidx/media3/transformer/EditedMediaItemSequence;
+     661: invokeinterface #307,  2          // InterfaceMethod java/util/Collection.add:(Ljava/lang/Object;)Z
+     666: pop
+     667: nop
+     668: nop
+     669: goto          530
+     672: nop
+     673: new           #96                 // class androidx/media3/transformer/Composition$Builder
+     676: dup
+     677: aload         6
+     679: invokespecial #362                // Method androidx/media3/transformer/Composition$Builder."<init>":(Ljava/util/List;)V
+     682: aload_1
+     683: invokevirtual #330                // Method com/ocutech/editor/core/PlannedProject.getAudioLanes:()Ljava/util/List;
+     686: checkcast     #255                // class java/util/Collection
+     689: invokeinterface #363,  1          // InterfaceMethod java/util/Collection.isEmpty:()Z
+     694: ifne          701
+     697: iconst_1
+     698: goto          702
+     701: iconst_0
+     702: invokevirtual #366                // Method androidx/media3/transformer/Composition$Builder.experimentalSetForceAudioTrack:(Z)Landroidx/media3/transformer/Composition$Builder;
+     705: invokevirtual #369                // Method androidx/media3/transformer/Composition$Builder.build:()Landroidx/media3/transformer/Composition;
+     708: dup
+     709: ldc_w         #371                // String build(...)
+     712: invokestatic  #355                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     715: areturn
+
+  private final androidx.media3.transformer.EditedMediaItem buildVisualEditedItem(java.lang.String, com.ocutech.editor.core.PlannedVisualSegment, java.util.Map<java.lang.String, com.ocutech.editor.model.OverlaySpec>, java.util.List<com.ocutech.editor.model.ValidationIssue>, int);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokespecial #413                // Method buildVisualMediaItem:(Ljava/lang/String;Lcom/ocutech/editor/core/PlannedVisualSegment;)Landroidx/media3/common/MediaItem;
+       6: astore        6
+       8: aload_0
+       9: aload_2
+      10: aload_3
+      11: aload         4
+      13: invokespecial #416                // Method buildSegmentEffects:(Lcom/ocutech/editor/core/PlannedVisualSegment;Ljava/util/Map;Ljava/util/List;)Landroidx/media3/transformer/Effects;
+      16: astore        7
+      18: new           #100                // class androidx/media3/transformer/EditedMediaItem$Builder
+      21: dup
+      22: aload         6
+      24: invokespecial #419                // Method androidx/media3/transformer/EditedMediaItem$Builder."<init>":(Landroidx/media3/common/MediaItem;)V
+      27: aload_2
+      28: invokevirtual #422                // Method com/ocutech/editor/core/PlannedVisualSegment.getDurationMs:()J
+      31: sipush        1000
+      34: i2l
+      35: lmul
+      36: invokevirtual #426                // Method androidx/media3/transformer/EditedMediaItem$Builder.setDurationUs:(J)Landroidx/media3/transformer/EditedMediaItem$Builder;
+      39: iconst_1
+      40: istore        8
+      42: aload_2
+      43: invokevirtual #430                // Method com/ocutech/editor/core/PlannedVisualSegment.getFrameRate:()Ljava/lang/Integer;
+      46: dup
+      47: ifnull        56
+      50: invokevirtual #435                // Method java/lang/Integer.intValue:()I
+      53: goto          59
+      56: pop
+      57: iload         5
+      59: istore        9
+      61: iload         8
+      63: iload         9
+      65: invokestatic  #444                // Method java/lang/Math.max:(II)I
+      68: invokevirtual #448                // Method androidx/media3/transformer/EditedMediaItem$Builder.setFrameRate:(I)Landroidx/media3/transformer/EditedMediaItem$Builder;
+      71: aload_2
+      72: invokevirtual #451                // Method com/ocutech/editor/core/PlannedVisualSegment.getRemoveAudio:()Z
+      75: invokevirtual #455                // Method androidx/media3/transformer/EditedMediaItem$Builder.setRemoveAudio:(Z)Landroidx/media3/transformer/EditedMediaItem$Builder;
+      78: aload         7
+      80: invokevirtual #459                // Method androidx/media3/transformer/EditedMediaItem$Builder.setEffects:(Landroidx/media3/transformer/Effects;)Landroidx/media3/transformer/EditedMediaItem$Builder;
+      83: invokevirtual #462                // Method androidx/media3/transformer/EditedMediaItem$Builder.build:()Landroidx/media3/transformer/EditedMediaItem;
+      86: dup
+      87: ldc_w         #371                // String build(...)
+      90: invokestatic  #355                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+      93: areturn
+
+  private final androidx.media3.common.MediaItem buildVisualMediaItem(java.lang.String, com.ocutech.editor.core.PlannedVisualSegment);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokespecial #467                // Method parseUri:(Ljava/lang/String;)Landroid/net/Uri;
+       5: astore_3
+       6: new           #78                 // class androidx/media3/common/MediaItem$Builder
+       9: dup
+      10: invokespecial #468                // Method androidx/media3/common/MediaItem$Builder."<init>":()V
+      13: aload_3
+      14: invokevirtual #472                // Method androidx/media3/common/MediaItem$Builder.setUri:(Landroid/net/Uri;)Landroidx/media3/common/MediaItem$Builder;
+      17: dup
+      18: ldc_w         #474                // String setUri(...)
+      21: invokestatic  #355                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+      24: astore        4
+      26: aload_2
+      27: invokevirtual #477                // Method com/ocutech/editor/core/PlannedVisualSegment.getAssetType:()Lcom/ocutech/editor/model/AssetType;
+      30: getstatic     #270                // Field com/ocutech/editor/model/AssetType.IMAGE:Lcom/ocutech/editor/model/AssetType;
+      33: if_acmpne     55
+      36: aload         4
+      38: aload_2
+      39: invokevirtual #422                // Method com/ocutech/editor/core/PlannedVisualSegment.getDurationMs:()J
+      42: invokevirtual #481                // Method androidx/media3/common/MediaItem$Builder.setImageDurationMs:(J)Landroidx/media3/common/MediaItem$Builder;
+      45: astore        5
+      47: aload         5
+      49: invokestatic  #485                // Method kotlin/jvm/internal/Intrinsics.checkNotNull:(Ljava/lang/Object;)V
+      52: goto          100
+      55: aload         4
+      57: lconst_0
+      58: aload_2
+      59: invokevirtual #490                // Method com/ocutech/editor/core/PlannedVisualSegment.getSourceStartMs:()J
+      62: invokestatic  #493                // Method java/lang/Math.max:(JJ)J
+      65: invokevirtual #496                // Method androidx/media3/common/MediaItem$Builder.setClipStartPositionMs:(J)Landroidx/media3/common/MediaItem$Builder;
+      68: pop
+      69: aload_2
+      70: invokevirtual #500                // Method com/ocutech/editor/core/PlannedVisualSegment.getSourceEndMs:()Ljava/lang/Long;
+      73: astore        5
+      75: aload         5
+      77: ifnull        100
+      80: aload         4
+      82: aload_2
+      83: invokevirtual #490                // Method com/ocutech/editor/core/PlannedVisualSegment.getSourceStartMs:()J
+      86: lconst_1
+      87: ladd
+      88: aload         5
+      90: invokevirtual #505                // Method java/lang/Long.longValue:()J
+      93: invokestatic  #493                // Method java/lang/Math.max:(JJ)J
+      96: invokevirtual #508                // Method androidx/media3/common/MediaItem$Builder.setClipEndPositionMs:(J)Landroidx/media3/common/MediaItem$Builder;
+      99: pop
+     100: aload         4
+     102: invokevirtual #511                // Method androidx/media3/common/MediaItem$Builder.build:()Landroidx/media3/common/MediaItem;
+     105: dup
+     106: ldc_w         #371                // String build(...)
+     109: invokestatic  #355                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     112: areturn
+
+  private final androidx.media3.transformer.EditedMediaItem buildAudioEditedItem(java.lang.String, com.ocutech.editor.core.PlannedAudioLane, long);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokespecial #467                // Method parseUri:(Ljava/lang/String;)Landroid/net/Uri;
+       5: astore        5
+       7: new           #78                 // class androidx/media3/common/MediaItem$Builder
+      10: dup
+      11: invokespecial #468                // Method androidx/media3/common/MediaItem$Builder."<init>":()V
+      14: aload         5
+      16: invokevirtual #472                // Method androidx/media3/common/MediaItem$Builder.setUri:(Landroid/net/Uri;)Landroidx/media3/common/MediaItem$Builder;
+      19: dup
+      20: ldc_w         #474                // String setUri(...)
+      23: invokestatic  #355                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+      26: astore        6
+      28: lconst_0
+      29: lstore        9
+      31: aload_2
+      32: invokevirtual #519                // Method com/ocutech/editor/core/PlannedAudioLane.getTrimStartMs:()Ljava/lang/Long;
+      35: dup
+      36: ifnull        45
+      39: invokevirtual #505                // Method java/lang/Long.longValue:()J
+      42: goto          47
+      45: pop
+      46: lconst_0
+      47: lstore        11
+      49: lload         9
+      51: lload         11
+      53: invokestatic  #493                // Method java/lang/Math.max:(JJ)J
+      56: lstore        7
+      58: aload_2
+      59: invokevirtual #522                // Method com/ocutech/editor/core/PlannedAudioLane.getTrimEndMs:()Ljava/lang/Long;
+      62: dup
+      63: ifnull        93
+      66: checkcast     #524                // class java/lang/Number
+      69: invokevirtual #525                // Method java/lang/Number.longValue:()J
+      72: lstore        12
+      74: iconst_0
+      75: istore        14
+      77: lload         7
+      79: lconst_1
+      80: ladd
+      81: lload         12
+      83: invokestatic  #493                // Method java/lang/Math.max:(JJ)J
+      86: nop
+      87: invokestatic  #529                // Method java/lang/Long.valueOf:(J)Ljava/lang/Long;
+      90: goto          95
+      93: pop
+      94: aconst_null
+      95: astore        9
+      97: lload         7
+      99: lconst_0
+     100: lcmp
+     101: ifle          112
+     104: aload         6
+     106: lload         7
+     108: invokevirtual #496                // Method androidx/media3/common/MediaItem$Builder.setClipStartPositionMs:(J)Landroidx/media3/common/MediaItem$Builder;
+     111: pop
+     112: aload         9
+     114: ifnull        128
+     117: aload         6
+     119: aload         9
+     121: invokevirtual #505                // Method java/lang/Long.longValue:()J
+     124: invokevirtual #508                // Method androidx/media3/common/MediaItem$Builder.setClipEndPositionMs:(J)Landroidx/media3/common/MediaItem$Builder;
+     127: pop
+     128: nop
+     129: aload         9
+     131: ifnull        149
+     134: lconst_1
+     135: aload         9
+     137: invokevirtual #505                // Method java/lang/Long.longValue:()J
+     140: lload         7
+     142: lsub
+     143: invokestatic  #493                // Method java/lang/Math.max:(JJ)J
+     146: goto          154
+     149: lconst_1
+     150: lload_3
+     151: invokestatic  #493                // Method java/lang/Math.max:(JJ)J
+     154: lstore        10
+     156: new           #89                 // class androidx/media3/common/audio/GainProcessor
+     159: dup
+     160: new           #83                 // class androidx/media3/common/audio/DefaultGainProvider$Builder
+     163: dup
+     164: aload_2
+     165: invokevirtual #533                // Method com/ocutech/editor/core/PlannedAudioLane.getVolume:()D
+     168: d2f
+     169: fconst_0
+     170: invokestatic  #536                // Method kotlin/ranges/RangesKt.coerceAtLeast:(FF)F
+     173: invokespecial #539                // Method androidx/media3/common/audio/DefaultGainProvider$Builder."<init>":(F)V
+     176: invokevirtual #542                // Method androidx/media3/common/audio/DefaultGainProvider$Builder.build:()Landroidx/media3/common/audio/DefaultGainProvider;
+     179: checkcast     #87                 // class androidx/media3/common/audio/GainProcessor$GainProvider
+     182: invokespecial #545                // Method androidx/media3/common/audio/GainProcessor."<init>":(Landroidx/media3/common/audio/GainProcessor$GainProvider;)V
+     185: astore        12
+     187: new           #100                // class androidx/media3/transformer/EditedMediaItem$Builder
+     190: dup
+     191: aload         6
+     193: invokevirtual #511                // Method androidx/media3/common/MediaItem$Builder.build:()Landroidx/media3/common/MediaItem;
+     196: invokespecial #419                // Method androidx/media3/transformer/EditedMediaItem$Builder."<init>":(Landroidx/media3/common/MediaItem;)V
+     199: iconst_1
+     200: invokevirtual #548                // Method androidx/media3/transformer/EditedMediaItem$Builder.setRemoveVideo:(Z)Landroidx/media3/transformer/EditedMediaItem$Builder;
+     203: lload         10
+     205: sipush        1000
+     208: i2l
+     209: lmul
+     210: invokevirtual #426                // Method androidx/media3/transformer/EditedMediaItem$Builder.setDurationUs:(J)Landroidx/media3/transformer/EditedMediaItem$Builder;
+     213: new           #439                // class androidx/media3/transformer/Effects
+     216: dup
+     217: aload         12
+     219: invokestatic  #347                // Method kotlin/collections/CollectionsKt.listOf:(Ljava/lang/Object;)Ljava/util/List;
+     222: invokestatic  #551                // Method kotlin/collections/CollectionsKt.emptyList:()Ljava/util/List;
+     225: invokespecial #554                // Method androidx/media3/transformer/Effects."<init>":(Ljava/util/List;Ljava/util/List;)V
+     228: invokevirtual #459                // Method androidx/media3/transformer/EditedMediaItem$Builder.setEffects:(Landroidx/media3/transformer/Effects;)Landroidx/media3/transformer/EditedMediaItem$Builder;
+     231: invokevirtual #462                // Method androidx/media3/transformer/EditedMediaItem$Builder.build:()Landroidx/media3/transformer/EditedMediaItem;
+     234: dup
+     235: ldc_w         #371                // String build(...)
+     238: invokestatic  #355                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     241: areturn
+
+  private final androidx.media3.transformer.Effects buildSegmentEffects(com.ocutech.editor.core.PlannedVisualSegment, java.util.Map<java.lang.String, com.ocutech.editor.model.OverlaySpec>, java.util.List<com.ocutech.editor.model.ValidationIssue>);
+    Code:
+       0: getstatic     #570                // Field com/ocutech/editor/effects/EffectSpecBuilder.INSTANCE:Lcom/ocutech/editor/effects/EffectSpecBuilder;
+       3: aload_1
+       4: invokevirtual #574                // Method com/ocutech/editor/core/PlannedVisualSegment.getEffects:()Lcom/ocutech/editor/model/ClipEffectsSpec;
+       7: aload_2
+       8: invokevirtual #578                // Method com/ocutech/editor/effects/EffectSpecBuilder.resolve:(Lcom/ocutech/editor/model/ClipEffectsSpec;Ljava/util/Map;)Lcom/ocutech/editor/effects/ResolvedEffects;
+      11: astore        4
+      13: new           #252                // class java/util/ArrayList
+      16: dup
+      17: invokespecial #253                // Method java/util/ArrayList."<init>":()V
+      20: checkcast     #221                // class java/util/List
+      23: astore        5
+      25: aload_1
+      26: invokevirtual #451                // Method com/ocutech/editor/core/PlannedVisualSegment.getRemoveAudio:()Z
+      29: ifne          98
+      32: aload_1
+      33: invokevirtual #579                // Method com/ocutech/editor/core/PlannedVisualSegment.getVolume:()D
+      36: dconst_0
+      37: dcmpl
+      38: iflt          98
+      41: aload_1
+      42: invokevirtual #579                // Method com/ocutech/editor/core/PlannedVisualSegment.getVolume:()D
+      45: dconst_1
+      46: dcmpg
+      47: ifne          54
+      50: iconst_1
+      51: goto          55
+      54: iconst_0
+      55: ifne          98
+      58: aload         5
+      60: checkcast     #255                // class java/util/Collection
+      63: new           #89                 // class androidx/media3/common/audio/GainProcessor
+      66: dup
+      67: new           #83                 // class androidx/media3/common/audio/DefaultGainProvider$Builder
+      70: dup
+      71: aload_1
+      72: invokevirtual #579                // Method com/ocutech/editor/core/PlannedVisualSegment.getVolume:()D
+      75: d2f
+      76: fconst_0
+      77: invokestatic  #536                // Method kotlin/ranges/RangesKt.coerceAtLeast:(FF)F
+      80: invokespecial #539                // Method androidx/media3/common/audio/DefaultGainProvider$Builder."<init>":(F)V
+      83: invokevirtual #542                // Method androidx/media3/common/audio/DefaultGainProvider$Builder.build:()Landroidx/media3/common/audio/DefaultGainProvider;
+      86: checkcast     #87                 // class androidx/media3/common/audio/GainProcessor$GainProvider
+      89: invokespecial #545                // Method androidx/media3/common/audio/GainProcessor."<init>":(Landroidx/media3/common/audio/GainProcessor$GainProvider;)V
+      92: invokeinterface #307,  2          // InterfaceMethod java/util/Collection.add:(Ljava/lang/Object;)Z
+      97: pop
+      98: new           #252                // class java/util/ArrayList
+     101: dup
+     102: invokespecial #253                // Method java/util/ArrayList."<init>":()V
+     105: checkcast     #221                // class java/util/List
+     108: astore        6
+     110: new           #583                // class com/ocutech/editor/export/ColorAdjustRgbMatrix
+     113: dup
+     114: aload         4
+     116: invokevirtual #587                // Method com/ocutech/editor/effects/ResolvedEffects.getBrightness:()F
+     119: aload         4
+     121: invokevirtual #590                // Method com/ocutech/editor/effects/ResolvedEffects.getContrast:()F
+     124: aload         4
+     126: invokevirtual #593                // Method com/ocutech/editor/effects/ResolvedEffects.getSaturation:()F
+     129: invokespecial #596                // Method com/ocutech/editor/export/ColorAdjustRgbMatrix."<init>":(FFF)V
+     132: astore        7
+     134: aload         7
+     136: invokevirtual #599                // Method com/ocutech/editor/export/ColorAdjustRgbMatrix.isIdentity:()Z
+     139: ifne          155
+     142: aload         6
+     144: checkcast     #255                // class java/util/Collection
+     147: aload         7
+     149: invokeinterface #307,  2          // InterfaceMethod java/util/Collection.add:(Ljava/lang/Object;)Z
+     154: pop
+     155: aload_1
+     156: invokevirtual #603                // Method com/ocutech/editor/core/PlannedVisualSegment.getKind:()Lcom/ocutech/editor/core/SegmentKind;
+     159: getstatic     #607                // Field com/ocutech/editor/export/Media3ExportExecutor$WhenMappings.$EnumSwitchMapping$0:[I
+     162: swap
+     163: invokevirtual #612                // Method com/ocutech/editor/core/SegmentKind.ordinal:()I
+     166: iaload
+     167: tableswitch   { // 1 to 3
+                     1: 192
+                     2: 233
+                     3: 274
+               default: 277
+          }
+     192: aload_1
+     193: invokevirtual #616                // Method com/ocutech/editor/core/PlannedVisualSegment.getTransitionType:()Lcom/ocutech/editor/model/TransitionType;
+     196: getstatic     #622                // Field com/ocutech/editor/model/TransitionType.FADE_FROM_BLACK:Lcom/ocutech/editor/model/TransitionType;
+     199: if_acmpne     285
+     202: aload         6
+     204: checkcast     #255                // class java/util/Collection
+     207: new           #624                // class com/ocutech/editor/export/FadeRgbMatrix
+     210: dup
+     211: aload_1
+     212: invokevirtual #422                // Method com/ocutech/editor/core/PlannedVisualSegment.getDurationMs:()J
+     215: sipush        1000
+     218: i2l
+     219: lmul
+     220: iconst_1
+     221: invokespecial #627                // Method com/ocutech/editor/export/FadeRgbMatrix."<init>":(JZ)V
+     224: invokeinterface #307,  2          // InterfaceMethod java/util/Collection.add:(Ljava/lang/Object;)Z
+     229: pop
+     230: goto          285
+     233: aload_1
+     234: invokevirtual #616                // Method com/ocutech/editor/core/PlannedVisualSegment.getTransitionType:()Lcom/ocutech/editor/model/TransitionType;
+     237: getstatic     #630                // Field com/ocutech/editor/model/TransitionType.DIP_TO_BLACK:Lcom/ocutech/editor/model/TransitionType;
+     240: if_acmpne     285
+     243: aload         6
+     245: checkcast     #255                // class java/util/Collection
+     248: new           #624                // class com/ocutech/editor/export/FadeRgbMatrix
+     251: dup
+     252: aload_1
+     253: invokevirtual #422                // Method com/ocutech/editor/core/PlannedVisualSegment.getDurationMs:()J
+     256: sipush        1000
+     259: i2l
+     260: lmul
+     261: iconst_0
+     262: invokespecial #627                // Method com/ocutech/editor/export/FadeRgbMatrix."<init>":(JZ)V
+     265: invokeinterface #307,  2          // InterfaceMethod java/util/Collection.add:(Ljava/lang/Object;)Z
+     270: pop
+     271: goto          285
+     274: goto          285
+     277: new           #632                // class kotlin/NoWhenBranchMatchedException
+     280: dup
+     281: invokespecial #633                // Method kotlin/NoWhenBranchMatchedException."<init>":()V
+     284: athrow
+     285: aload         4
+     287: invokevirtual #636                // Method com/ocutech/editor/effects/ResolvedEffects.getLutAssetPath:()Ljava/lang/String;
+     290: astore        8
+     292: aload         8
+     294: checkcast     #638                // class java/lang/CharSequence
+     297: astore        9
+     299: aload         9
+     301: ifnull        312
+     304: aload         9
+     306: invokestatic  #644                // Method kotlin/text/StringsKt.isBlank:(Ljava/lang/CharSequence;)Z
+     309: ifeq          316
+     312: iconst_1
+     313: goto          317
+     316: iconst_0
+     317: ifne          465
+     320: aload_0
+     321: astore        10
+     323: nop
+     324: getstatic     #650                // Field kotlin/Result.Companion:Lkotlin/Result$Companion;
+     327: pop
+     328: aload         10
+     330: checkcast     #2                  // class com/ocutech/editor/export/Media3ExportExecutor
+     333: astore        11
+     335: iconst_0
+     336: istore        12
+     338: aload         11
+     340: aload         8
+     342: invokespecial #653                // Method loadLut:(Ljava/lang/String;)Landroidx/media3/effect/SingleColorLut;
+     345: invokestatic  #656                // Method kotlin/Result."constructor-impl":(Ljava/lang/Object;)Ljava/lang/Object;
+     348: astore        11
+     350: goto          369
+     353: astore        12
+     355: getstatic     #650                // Field kotlin/Result.Companion:Lkotlin/Result$Companion;
+     358: pop
+     359: aload         12
+     361: invokestatic  #662                // Method kotlin/ResultKt.createFailure:(Ljava/lang/Throwable;)Ljava/lang/Object;
+     364: invokestatic  #656                // Method kotlin/Result."constructor-impl":(Ljava/lang/Object;)Ljava/lang/Object;
+     367: astore        11
+     369: aload         11
+     371: astore        10
+     373: aload         10
+     375: invokestatic  #666                // Method kotlin/Result."exceptionOrNull-impl":(Ljava/lang/Object;)Ljava/lang/Throwable;
+     378: dup
+     379: ifnonnull     388
+     382: pop
+     383: aload         10
+     385: goto          442
+     388: astore        11
+     390: iconst_0
+     391: istore        12
+     393: aload_3
+     394: checkcast     #255                // class java/util/Collection
+     397: astore        13
+     399: new           #668                // class com/ocutech/editor/model/ValidationIssue
+     402: dup
+     403: ldc_w         #670                // String LUT_LOAD_FAILED
+     406: aload         11
+     408: invokevirtual #673                // Method java/lang/Throwable.getMessage:()Ljava/lang/String;
+     411: dup
+     412: ifnonnull     419
+     415: pop
+     416: ldc_w         #675                // String Failed to parse/load LUT.
+     419: aload_1
+     420: invokevirtual #678                // Method com/ocutech/editor/core/PlannedVisualSegment.getClipIndex:()I
+     423: invokedynamic #690,  0            // InvokeDynamic #0:makeConcatWithConstants:(I)Ljava/lang/String;
+     428: invokespecial #693                // Method com/ocutech/editor/model/ValidationIssue."<init>":(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+     431: aload         13
+     433: swap
+     434: invokeinterface #307,  2          // InterfaceMethod java/util/Collection.add:(Ljava/lang/Object;)Z
+     439: pop
+     440: aconst_null
+     441: nop
+     442: checkcast     #695                // class androidx/media3/effect/SingleColorLut
+     445: astore        9
+     447: aload         9
+     449: ifnull        465
+     452: aload         6
+     454: checkcast     #255                // class java/util/Collection
+     457: aload         9
+     459: invokeinterface #307,  2          // InterfaceMethod java/util/Collection.add:(Ljava/lang/Object;)Z
+     464: pop
+     465: aload         4
+     467: invokevirtual #696                // Method com/ocutech/editor/effects/ResolvedEffects.getOverlays:()Ljava/util/List;
+     470: checkcast     #255                // class java/util/Collection
+     473: invokeinterface #363,  1          // InterfaceMethod java/util/Collection.isEmpty:()Z
+     478: ifne          485
+     481: iconst_1
+     482: goto          486
+     485: iconst_0
+     486: ifeq          874
+     489: aload         4
+     491: invokevirtual #696                // Method com/ocutech/editor/effects/ResolvedEffects.getOverlays:()Ljava/util/List;
+     494: checkcast     #190                // class java/lang/Iterable
+     497: astore        10
+     499: iconst_0
+     500: istore        11
+     502: aload         10
+     504: astore        12
+     506: new           #252                // class java/util/ArrayList
+     509: dup
+     510: invokespecial #253                // Method java/util/ArrayList."<init>":()V
+     513: checkcast     #255                // class java/util/Collection
+     516: astore        13
+     518: iconst_0
+     519: istore        14
+     521: aload         12
+     523: astore        15
+     525: iconst_0
+     526: istore        16
+     528: aload         15
+     530: invokeinterface #219,  1          // InterfaceMethod java/lang/Iterable.iterator:()Ljava/util/Iterator;
+     535: astore        17
+     537: aload         17
+     539: invokeinterface #227,  1          // InterfaceMethod java/util/Iterator.hasNext:()Z
+     544: ifeq          824
+     547: aload         17
+     549: invokeinterface #231,  1          // InterfaceMethod java/util/Iterator.next:()Ljava/lang/Object;
+     554: astore        18
+     556: aload         18
+     558: astore        19
+     560: iconst_0
+     561: istore        20
+     563: aload         19
+     565: checkcast     #246                // class com/ocutech/editor/model/OverlaySpec
+     568: astore        21
+     570: iconst_0
+     571: istore        22
+     573: aload_0
+     574: astore        23
+     576: nop
+     577: getstatic     #650                // Field kotlin/Result.Companion:Lkotlin/Result$Companion;
+     580: pop
+     581: aload         23
+     583: checkcast     #2                  // class com/ocutech/editor/export/Media3ExportExecutor
+     586: astore        24
+     588: iconst_0
+     589: istore        25
+     591: new           #92                 // class androidx/media3/effect/StaticOverlaySettings$Builder
+     594: dup
+     595: invokespecial #697                // Method androidx/media3/effect/StaticOverlaySettings$Builder."<init>":()V
+     598: aload         21
+     600: invokevirtual #700                // Method com/ocutech/editor/model/OverlaySpec.getOpacity:()D
+     603: d2f
+     604: fconst_0
+     605: fconst_1
+     606: invokestatic  #704                // Method kotlin/ranges/RangesKt.coerceIn:(FFF)F
+     609: invokevirtual #708                // Method androidx/media3/effect/StaticOverlaySettings$Builder.setAlphaScale:(F)Landroidx/media3/effect/StaticOverlaySettings$Builder;
+     612: aload         21
+     614: invokevirtual #711                // Method com/ocutech/editor/model/OverlaySpec.getScale:()D
+     617: d2f
+     618: aload         21
+     620: invokevirtual #711                // Method com/ocutech/editor/model/OverlaySpec.getScale:()D
+     623: d2f
+     624: invokevirtual #715                // Method androidx/media3/effect/StaticOverlaySettings$Builder.setScale:(FF)Landroidx/media3/effect/StaticOverlaySettings$Builder;
+     627: aload         21
+     629: invokevirtual #718                // Method com/ocutech/editor/model/OverlaySpec.getX:()D
+     632: d2f
+     633: fconst_0
+     634: fconst_1
+     635: invokestatic  #704                // Method kotlin/ranges/RangesKt.coerceIn:(FFF)F
+     638: fconst_2
+     639: fmul
+     640: fconst_1
+     641: fsub
+     642: fconst_1
+     643: aload         21
+     645: invokevirtual #721                // Method com/ocutech/editor/model/OverlaySpec.getY:()D
+     648: d2f
+     649: fconst_0
+     650: fconst_1
+     651: invokestatic  #704                // Method kotlin/ranges/RangesKt.coerceIn:(FFF)F
+     654: fconst_2
+     655: fmul
+     656: fsub
+     657: invokevirtual #724                // Method androidx/media3/effect/StaticOverlaySettings$Builder.setBackgroundFrameAnchor:(FF)Landroidx/media3/effect/StaticOverlaySettings$Builder;
+     660: fconst_0
+     661: fconst_0
+     662: invokevirtual #727                // Method androidx/media3/effect/StaticOverlaySettings$Builder.setOverlayFrameAnchor:(FF)Landroidx/media3/effect/StaticOverlaySettings$Builder;
+     665: invokevirtual #730                // Method androidx/media3/effect/StaticOverlaySettings$Builder.build:()Landroidx/media3/effect/StaticOverlaySettings;
+     668: dup
+     669: ldc_w         #371                // String build(...)
+     672: invokestatic  #355                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     675: astore        26
+     677: aload         24
+     679: getfield      #124                // Field context:Landroid/content/Context;
+     682: aload         24
+     684: aload         21
+     686: invokevirtual #731                // Method com/ocutech/editor/model/OverlaySpec.getUri:()Ljava/lang/String;
+     689: invokespecial #467                // Method parseUri:(Ljava/lang/String;)Landroid/net/Uri;
+     692: aload         26
+     694: invokestatic  #737                // Method androidx/media3/effect/BitmapOverlay.createStaticBitmapOverlay:(Landroid/content/Context;Landroid/net/Uri;Landroidx/media3/effect/StaticOverlaySettings;)Landroidx/media3/effect/BitmapOverlay;
+     697: invokestatic  #656                // Method kotlin/Result."constructor-impl":(Ljava/lang/Object;)Ljava/lang/Object;
+     700: astore        24
+     702: goto          721
+     705: astore        25
+     707: getstatic     #650                // Field kotlin/Result.Companion:Lkotlin/Result$Companion;
+     710: pop
+     711: aload         25
+     713: invokestatic  #662                // Method kotlin/ResultKt.createFailure:(Ljava/lang/Throwable;)Ljava/lang/Object;
+     716: invokestatic  #656                // Method kotlin/Result."constructor-impl":(Ljava/lang/Object;)Ljava/lang/Object;
+     719: astore        24
+     721: aload         24
+     723: astore        23
+     725: aload         23
+     727: invokestatic  #666                // Method kotlin/Result."exceptionOrNull-impl":(Ljava/lang/Object;)Ljava/lang/Throwable;
+     730: dup
+     731: ifnonnull     740
+     734: pop
+     735: aload         23
+     737: goto          793
+     740: astore        24
+     742: iconst_0
+     743: istore        25
+     745: aload_3
+     746: checkcast     #255                // class java/util/Collection
+     749: astore        26
+     751: new           #668                // class com/ocutech/editor/model/ValidationIssue
+     754: dup
+     755: ldc_w         #739                // String OVERLAY_LOAD_FAILED
+     758: aload         24
+     760: invokevirtual #673                // Method java/lang/Throwable.getMessage:()Ljava/lang/String;
+     763: dup
+     764: ifnonnull     771
+     767: pop
+     768: ldc_w         #741                // String Failed to load overlay bitmap.
+     771: aload_1
+     772: invokevirtual #678                // Method com/ocutech/editor/core/PlannedVisualSegment.getClipIndex:()I
+     775: invokedynamic #744,  0            // InvokeDynamic #1:makeConcatWithConstants:(I)Ljava/lang/String;
+     780: invokespecial #693                // Method com/ocutech/editor/model/ValidationIssue."<init>":(Ljava/lang/String;Ljava/lang/String;Ljava/lang/String;)V
+     783: aload         26
+     785: swap
+     786: invokeinterface #307,  2          // InterfaceMethod java/util/Collection.add:(Ljava/lang/Object;)Z
+     791: pop
+     792: aconst_null
+     793: checkcast     #733                // class androidx/media3/effect/BitmapOverlay
+     796: nop
+     797: dup
+     798: ifnull        819
+     801: astore        27
+     803: iconst_0
+     804: istore        28
+     806: aload         13
+     808: aload         27
+     810: invokeinterface #307,  2          // InterfaceMethod java/util/Collection.add:(Ljava/lang/Object;)Z
+     815: pop
+     816: goto          820
+     819: pop
+     820: nop
+     821: goto          537
+     824: nop
+     825: aload         13
+     827: checkcast     #221                // class java/util/List
+     830: nop
+     831: astore        9
+     833: aload         9
+     835: checkcast     #255                // class java/util/Collection
+     838: invokeinterface #363,  1          // InterfaceMethod java/util/Collection.isEmpty:()Z
+     843: ifne          850
+     846: iconst_1
+     847: goto          851
+     850: iconst_0
+     851: ifeq          874
+     854: aload         6
+     856: checkcast     #255                // class java/util/Collection
+     859: new           #746                // class androidx/media3/effect/OverlayEffect
+     862: dup
+     863: aload         9
+     865: invokespecial #747                // Method androidx/media3/effect/OverlayEffect."<init>":(Ljava/util/List;)V
+     868: invokeinterface #307,  2          // InterfaceMethod java/util/Collection.add:(Ljava/lang/Object;)Z
+     873: pop
+     874: new           #439                // class androidx/media3/transformer/Effects
+     877: dup
+     878: aload         5
+     880: aload         6
+     882: invokespecial #554                // Method androidx/media3/transformer/Effects."<init>":(Ljava/util/List;Ljava/util/List;)V
+     885: areturn
+    Exception table:
+       from    to  target type
+         323   350   353   Class java/lang/Throwable
+         576   702   705   Class java/lang/Throwable
+
+  private final androidx.media3.effect.SingleColorLut loadLut(java.lang.String);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokespecial #771                // Method openText:(Ljava/lang/String;)Ljava/lang/String;
+       5: astore_2
+       6: getstatic     #776                // Field com/ocutech/editor/effects/CubeLutParser.INSTANCE:Lcom/ocutech/editor/effects/CubeLutParser;
+       9: aload_2
+      10: invokevirtual #780                // Method com/ocutech/editor/effects/CubeLutParser.parse:(Ljava/lang/String;)Lcom/ocutech/editor/effects/CubeLut;
+      13: astore_3
+      14: aload_3
+      15: invokevirtual #785                // Method com/ocutech/editor/effects/CubeLut.getSize:()I
+      18: istore        4
+      20: iconst_0
+      21: istore        6
+      23: iload         4
+      25: anewarray     #787                // class "[[I"
+      28: astore        7
+      30: iload         6
+      32: iload         4
+      34: if_icmpge     98
+      37: iload         6
+      39: istore        8
+      41: aload         7
+      43: iload         8
+      45: iconst_0
+      46: istore        9
+      48: iload         4
+      50: anewarray     #790                // class "[I"
+      53: astore        10
+      55: istore        15
+      57: astore        14
+      59: iload         9
+      61: iload         4
+      63: if_icmpge     85
+      66: iload         9
+      68: istore        11
+      70: aload         10
+      72: iload         11
+      74: iload         4
+      76: newarray       int
+      78: aastore
+      79: iinc          9, 1
+      82: goto          59
+      85: aload         14
+      87: iload         15
+      89: aload         10
+      91: aastore
+      92: iinc          6, 1
+      95: goto          30
+      98: aload         7
+     100: astore        5
+     102: iconst_0
+     103: istore        6
+     105: iconst_0
+     106: istore        7
+     108: iload         7
+     110: iload         4
+     112: if_icmpge     300
+     115: iconst_0
+     116: istore        8
+     118: iload         8
+     120: iload         4
+     122: if_icmpge     294
+     125: iconst_0
+     126: istore        9
+     128: iload         9
+     130: iload         4
+     132: if_icmpge     288
+     135: aload_3
+     136: invokevirtual #793                // Method com/ocutech/editor/effects/CubeLut.getRows:()Ljava/util/List;
+     139: iload         6
+     141: iinc          6, 1
+     144: invokeinterface #796,  2          // InterfaceMethod java/util/List.get:(I)Ljava/lang/Object;
+     149: checkcast     #798                // class "[F"
+     152: astore        10
+     154: aload_0
+     155: aload         10
+     157: iconst_0
+     158: faload
+     159: aload_3
+     160: invokevirtual #802                // Method com/ocutech/editor/effects/CubeLut.getDomainMin:()[F
+     163: iconst_0
+     164: faload
+     165: aload_3
+     166: invokevirtual #805                // Method com/ocutech/editor/effects/CubeLut.getDomainMax:()[F
+     169: iconst_0
+     170: faload
+     171: invokespecial #807                // Method normalize:(FFF)F
+     174: fstore        11
+     176: aload_0
+     177: aload         10
+     179: iconst_1
+     180: faload
+     181: aload_3
+     182: invokevirtual #802                // Method com/ocutech/editor/effects/CubeLut.getDomainMin:()[F
+     185: iconst_1
+     186: faload
+     187: aload_3
+     188: invokevirtual #805                // Method com/ocutech/editor/effects/CubeLut.getDomainMax:()[F
+     191: iconst_1
+     192: faload
+     193: invokespecial #807                // Method normalize:(FFF)F
+     196: fstore        12
+     198: aload_0
+     199: aload         10
+     201: iconst_2
+     202: faload
+     203: aload_3
+     204: invokevirtual #802                // Method com/ocutech/editor/effects/CubeLut.getDomainMin:()[F
+     207: iconst_2
+     208: faload
+     209: aload_3
+     210: invokevirtual #805                // Method com/ocutech/editor/effects/CubeLut.getDomainMax:()[F
+     213: iconst_2
+     214: faload
+     215: invokespecial #807                // Method normalize:(FFF)F
+     218: fstore        13
+     220: aload         5
+     222: iload         9
+     224: aaload
+     225: iload         8
+     227: aaload
+     228: iload         7
+     230: fload         11
+     232: ldc_w         #808                // float 255.0f
+     235: fmul
+     236: invokestatic  #814                // Method kotlin/math/MathKt.roundToInt:(F)I
+     239: iconst_0
+     240: sipush        255
+     243: invokestatic  #817                // Method kotlin/ranges/RangesKt.coerceIn:(III)I
+     246: fload         12
+     248: ldc_w         #808                // float 255.0f
+     251: fmul
+     252: invokestatic  #814                // Method kotlin/math/MathKt.roundToInt:(F)I
+     255: iconst_0
+     256: sipush        255
+     259: invokestatic  #817                // Method kotlin/ranges/RangesKt.coerceIn:(III)I
+     262: fload         13
+     264: ldc_w         #808                // float 255.0f
+     267: fmul
+     268: invokestatic  #814                // Method kotlin/math/MathKt.roundToInt:(F)I
+     271: iconst_0
+     272: sipush        255
+     275: invokestatic  #817                // Method kotlin/ranges/RangesKt.coerceIn:(III)I
+     278: invokestatic  #822                // Method android/graphics/Color.rgb:(III)I
+     281: iastore
+     282: iinc          9, 1
+     285: goto          128
+     288: iinc          8, 1
+     291: goto          118
+     294: iinc          7, 1
+     297: goto          108
+     300: aload         5
+     302: invokestatic  #826                // Method androidx/media3/effect/SingleColorLut.createFromCube:([[[I)Landroidx/media3/effect/SingleColorLut;
+     305: dup
+     306: ldc_w         #828                // String createFromCube(...)
+     309: invokestatic  #355                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     312: areturn
+
+  private final float normalize(float, float, float);
+    Code:
+       0: fload_3
+       1: fload_2
+       2: fsub
+       3: fstore        4
+       5: fload         4
+       7: fconst_0
+       8: fcmpg
+       9: ifgt          19
+      12: fload_1
+      13: fconst_0
+      14: fconst_1
+      15: invokestatic  #704                // Method kotlin/ranges/RangesKt.coerceIn:(FFF)F
+      18: freturn
+      19: fload_1
+      20: fload_2
+      21: fsub
+      22: fload         4
+      24: fdiv
+      25: fconst_0
+      26: fconst_1
+      27: invokestatic  #704                // Method kotlin/ranges/RangesKt.coerceIn:(FFF)F
+      30: freturn
+
+  private final java.lang.String openText(java.lang.String);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: invokespecial #467                // Method parseUri:(Ljava/lang/String;)Landroid/net/Uri;
+       5: astore_2
+       6: aload_2
+       7: invokevirtual #845                // Method android/net/Uri.getScheme:()Ljava/lang/String;
+      10: checkcast     #638                // class java/lang/CharSequence
+      13: astore_3
+      14: aload_3
+      15: ifnull        25
+      18: aload_3
+      19: invokestatic  #644                // Method kotlin/text/StringsKt.isBlank:(Ljava/lang/CharSequence;)Z
+      22: ifeq          29
+      25: iconst_1
+      26: goto          30
+      29: iconst_0
+      30: ifne          47
+      33: aload_2
+      34: invokevirtual #845                // Method android/net/Uri.getScheme:()Ljava/lang/String;
+      37: ldc_w         #847                // String file
+      40: iconst_1
+      41: invokestatic  #851                // Method kotlin/text/StringsKt.equals:(Ljava/lang/String;Ljava/lang/String;Z)Z
+      44: ifeq          119
+      47: aload_2
+      48: invokevirtual #845                // Method android/net/Uri.getScheme:()Ljava/lang/String;
+      51: ldc_w         #847                // String file
+      54: iconst_1
+      55: invokestatic  #851                // Method kotlin/text/StringsKt.equals:(Ljava/lang/String;Ljava/lang/String;Z)Z
+      58: ifeq          68
+      61: aload_2
+      62: invokevirtual #854                // Method android/net/Uri.getPath:()Ljava/lang/String;
+      65: goto          69
+      68: aload_1
+      69: astore_3
+      70: new           #856                // class java/io/File
+      73: dup
+      74: aload_3
+      75: dup
+      76: ifnonnull     83
+      79: pop
+      80: ldc_w         #857                // String
+      83: invokespecial #858                // Method java/io/File."<init>":(Ljava/lang/String;)V
+      86: astore        4
+      88: aload         4
+      90: invokevirtual #861                // Method java/io/File.exists:()Z
+      93: ifne          110
+      96: new           #863                // class java/lang/IllegalArgumentException
+      99: dup
+     100: aload_1
+     101: invokedynamic #867,  0            // InvokeDynamic #2:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+     106: invokespecial #868                // Method java/lang/IllegalArgumentException."<init>":(Ljava/lang/String;)V
+     109: athrow
+     110: aload         4
+     112: aconst_null
+     113: iconst_1
+     114: aconst_null
+     115: invokestatic  #874                // Method kotlin/io/FilesKt.readText$default:(Ljava/io/File;Ljava/nio/charset/Charset;ILjava/lang/Object;)Ljava/lang/String;
+     118: areturn
+     119: aload_0
+     120: getfield      #124                // Field context:Landroid/content/Context;
+     123: invokevirtual #880                // Method android/content/Context.getContentResolver:()Landroid/content/ContentResolver;
+     126: aload_2
+     127: invokevirtual #886                // Method android/content/ContentResolver.openInputStream:(Landroid/net/Uri;)Ljava/io/InputStream;
+     130: dup
+     131: ifnull        255
+     134: astore        5
+     136: getstatic     #892                // Field kotlin/text/Charsets.UTF_8:Ljava/nio/charset/Charset;
+     139: astore        6
+     141: new           #894                // class java/io/InputStreamReader
+     144: dup
+     145: aload         5
+     147: aload         6
+     149: invokespecial #897                // Method java/io/InputStreamReader."<init>":(Ljava/io/InputStream;Ljava/nio/charset/Charset;)V
+     152: checkcast     #899                // class java/io/Reader
+     155: astore        7
+     157: sipush        8192
+     160: istore        8
+     162: aload         7
+     164: instanceof    #901                // class java/io/BufferedReader
+     167: ifeq          178
+     170: aload         7
+     172: checkcast     #901                // class java/io/BufferedReader
+     175: goto          189
+     178: new           #901                // class java/io/BufferedReader
+     181: dup
+     182: aload         7
+     184: iload         8
+     186: invokespecial #908                // Method java/io/BufferedReader."<init>":(Ljava/io/Reader;I)V
+     189: checkcast     #910                // class java/io/Closeable
+     192: astore        6
+     194: aconst_null
+     195: astore        7
+     197: nop
+     198: aload         6
+     200: checkcast     #901                // class java/io/BufferedReader
+     203: astore        8
+     205: iconst_0
+     206: istore        9
+     208: aload         8
+     210: checkcast     #899                // class java/io/Reader
+     213: invokestatic  #916                // Method kotlin/io/TextStreamsKt.readText:(Ljava/io/Reader;)Ljava/lang/String;
+     216: astore        8
+     218: aload         6
+     220: aload         7
+     222: invokestatic  #922                // Method kotlin/io/CloseableKt.closeFinally:(Ljava/io/Closeable;Ljava/lang/Throwable;)V
+     225: aload         8
+     227: goto          251
+     230: astore        9
+     232: aload         9
+     234: astore        7
+     236: aload         9
+     238: athrow
+     239: astore        9
+     241: aload         6
+     243: aload         7
+     245: invokestatic  #922                // Method kotlin/io/CloseableKt.closeFinally:(Ljava/io/Closeable;Ljava/lang/Throwable;)V
+     248: aload         9
+     250: athrow
+     251: dup
+     252: ifnonnull     270
+     255: pop
+     256: new           #863                // class java/lang/IllegalArgumentException
+     259: dup
+     260: aload_1
+     261: invokedynamic #925,  0            // InvokeDynamic #3:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+     266: invokespecial #868                // Method java/lang/IllegalArgumentException."<init>":(Ljava/lang/String;)V
+     269: athrow
+     270: areturn
+    Exception table:
+       from    to  target type
+         197   218   230   Class java/lang/Throwable
+         197   218   239   any
+         230   239   239   any
+         239   241   239   any
+
+  private final java.lang.String persistOutput(java.io.File, java.lang.String);
+    Code:
+       0: aload_0
+       1: aload_2
+       2: invokespecial #467                // Method parseUri:(Ljava/lang/String;)Landroid/net/Uri;
+       5: astore_3
+       6: aload_3
+       7: invokevirtual #845                // Method android/net/Uri.getScheme:()Ljava/lang/String;
+      10: dup
+      11: ifnull        30
+      14: getstatic     #935                // Field java/util/Locale.ROOT:Ljava/util/Locale;
+      17: invokevirtual #939                // Method java/lang/String.toLowerCase:(Ljava/util/Locale;)Ljava/lang/String;
+      20: dup
+      21: ldc_w         #941                // String toLowerCase(...)
+      24: invokestatic  #355                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+      27: goto          32
+      30: pop
+      31: aconst_null
+      32: astore        4
+      34: aload         4
+      36: ifnull        368
+      39: aload         4
+      41: invokevirtual #944                // Method java/lang/String.hashCode:()I
+      44: lookupswitch  { // 3
+                     0: 80
+               3143036: 94
+             951530617: 108
+               default: 419
+          }
+      80: aload         4
+      82: ldc_w         #857                // String
+      85: invokevirtual #946                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+      88: ifne          368
+      91: goto          419
+      94: aload         4
+      96: ldc_w         #847                // String file
+      99: invokevirtual #946                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+     102: ifne          295
+     105: goto          419
+     108: aload         4
+     110: ldc_w         #948                // String content
+     113: invokevirtual #946                // Method java/lang/String.equals:(Ljava/lang/Object;)Z
+     116: ifeq          419
+     119: aload_0
+     120: getfield      #124                // Field context:Landroid/content/Context;
+     123: invokevirtual #880                // Method android/content/Context.getContentResolver:()Landroid/content/ContentResolver;
+     126: aload_3
+     127: ldc_w         #950                // String w
+     130: invokevirtual #954                // Method android/content/ContentResolver.openOutputStream:(Landroid/net/Uri;Ljava/lang/String;)Ljava/io/OutputStream;
+     133: dup
+     134: ifnull        270
+     137: checkcast     #910                // class java/io/Closeable
+     140: astore        7
+     142: aconst_null
+     143: astore        8
+     145: nop
+     146: aload         7
+     148: checkcast     #956                // class java/io/OutputStream
+     151: astore        9
+     153: iconst_0
+     154: istore        11
+     156: new           #958                // class java/io/FileInputStream
+     159: dup
+     160: aload_1
+     161: invokespecial #961                // Method java/io/FileInputStream."<init>":(Ljava/io/File;)V
+     164: checkcast     #910                // class java/io/Closeable
+     167: astore        12
+     169: aconst_null
+     170: astore        13
+     172: nop
+     173: aload         12
+     175: checkcast     #958                // class java/io/FileInputStream
+     178: astore        14
+     180: iconst_0
+     181: istore        16
+     183: aload         14
+     185: checkcast     #903                // class java/io/InputStream
+     188: aload         9
+     190: iconst_0
+     191: iconst_2
+     192: aconst_null
+     193: invokestatic  #967                // Method kotlin/io/ByteStreamsKt.copyTo$default:(Ljava/io/InputStream;Ljava/io/OutputStream;IILjava/lang/Object;)J
+     196: lstore        14
+     198: aload         12
+     200: aload         13
+     202: invokestatic  #922                // Method kotlin/io/CloseableKt.closeFinally:(Ljava/io/Closeable;Ljava/lang/Throwable;)V
+     205: lload         14
+     207: goto          231
+     210: astore        16
+     212: aload         16
+     214: astore        13
+     216: aload         16
+     218: athrow
+     219: astore        16
+     221: aload         12
+     223: aload         13
+     225: invokestatic  #922                // Method kotlin/io/CloseableKt.closeFinally:(Ljava/io/Closeable;Ljava/lang/Throwable;)V
+     228: aload         16
+     230: athrow
+     231: nop
+     232: lstore        9
+     234: aload         7
+     236: aload         8
+     238: invokestatic  #922                // Method kotlin/io/CloseableKt.closeFinally:(Ljava/io/Closeable;Ljava/lang/Throwable;)V
+     241: lload         9
+     243: goto          267
+     246: astore        11
+     248: aload         11
+     250: astore        8
+     252: aload         11
+     254: athrow
+     255: astore        11
+     257: aload         7
+     259: aload         8
+     261: invokestatic  #922                // Method kotlin/io/CloseableKt.closeFinally:(Ljava/io/Closeable;Ljava/lang/Throwable;)V
+     264: aload         11
+     266: athrow
+     267: goto          282
+     270: pop
+     271: new           #312                // class java/lang/IllegalStateException
+     274: dup
+     275: ldc_w         #969                // String Unable to open output content uri for writing.
+     278: invokespecial #316                // Method java/lang/IllegalStateException."<init>":(Ljava/lang/String;)V
+     281: athrow
+     282: pop2
+     283: aload_3
+     284: invokevirtual #972                // Method android/net/Uri.toString:()Ljava/lang/String;
+     287: dup
+     288: ldc_w         #974                // String toString(...)
+     291: invokestatic  #355                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     294: areturn
+     295: aload_3
+     296: invokevirtual #854                // Method android/net/Uri.getPath:()Ljava/lang/String;
+     299: dup
+     300: ifnonnull     315
+     303: pop
+     304: new           #312                // class java/lang/IllegalStateException
+     307: dup
+     308: ldc_w         #976                // String Invalid file output uri.
+     311: invokespecial #316                // Method java/lang/IllegalStateException."<init>":(Ljava/lang/String;)V
+     314: athrow
+     315: astore        5
+     317: new           #856                // class java/io/File
+     320: dup
+     321: aload         5
+     323: invokespecial #858                // Method java/io/File."<init>":(Ljava/lang/String;)V
+     326: astore        6
+     328: aload         6
+     330: invokevirtual #980                // Method java/io/File.getParentFile:()Ljava/io/File;
+     333: dup
+     334: ifnull        344
+     337: invokevirtual #983                // Method java/io/File.mkdirs:()Z
+     340: pop
+     341: goto          345
+     344: pop
+     345: aload_1
+     346: aload         6
+     348: iconst_1
+     349: iconst_0
+     350: iconst_4
+     351: aconst_null
+     352: invokestatic  #986                // Method kotlin/io/FilesKt.copyTo$default:(Ljava/io/File;Ljava/io/File;ZIILjava/lang/Object;)Ljava/io/File;
+     355: pop
+     356: aload_3
+     357: invokevirtual #972                // Method android/net/Uri.toString:()Ljava/lang/String;
+     360: dup
+     361: ldc_w         #974                // String toString(...)
+     364: invokestatic  #355                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     367: areturn
+     368: new           #856                // class java/io/File
+     371: dup
+     372: aload_2
+     373: invokespecial #858                // Method java/io/File."<init>":(Ljava/lang/String;)V
+     376: astore        5
+     378: aload         5
+     380: invokevirtual #980                // Method java/io/File.getParentFile:()Ljava/io/File;
+     383: dup
+     384: ifnull        394
+     387: invokevirtual #983                // Method java/io/File.mkdirs:()Z
+     390: pop
+     391: goto          395
+     394: pop
+     395: aload_1
+     396: aload         5
+     398: iconst_1
+     399: iconst_0
+     400: iconst_4
+     401: aconst_null
+     402: invokestatic  #986                // Method kotlin/io/FilesKt.copyTo$default:(Ljava/io/File;Ljava/io/File;ZIILjava/lang/Object;)Ljava/io/File;
+     405: pop
+     406: aload         5
+     408: invokevirtual #989                // Method java/io/File.getAbsolutePath:()Ljava/lang/String;
+     411: dup
+     412: ldc_w         #991                // String getAbsolutePath(...)
+     415: invokestatic  #355                // Method kotlin/jvm/internal/Intrinsics.checkNotNullExpressionValue:(Ljava/lang/Object;Ljava/lang/String;)V
+     418: areturn
+     419: new           #312                // class java/lang/IllegalStateException
+     422: dup
+     423: aload_3
+     424: invokevirtual #845                // Method android/net/Uri.getScheme:()Ljava/lang/String;
+     427: invokedynamic #994,  0            // InvokeDynamic #4:makeConcatWithConstants:(Ljava/lang/String;)Ljava/lang/String;
+     432: invokespecial #316                // Method java/lang/IllegalStateException."<init>":(Ljava/lang/String;)V
+     435: athrow
+    Exception table:
+       from    to  target type
+         172   198   210   Class java/lang/Throwable
+         172   198   219   any
+         210   219   219   any
+         219   221   219   any
+         145   234   246   Class java/lang/Throwable
+         145   234   255   any
+         246   255   255   any
+         255   257   255   any
+
+  private final android.net.Uri parseUri(java.lang.String);
+    Code:
+       0: aload_1
+       1: invokestatic  #1005               // Method android/net/Uri.parse:(Ljava/lang/String;)Landroid/net/Uri;
+       4: astore_2
+       5: aload_2
+       6: invokevirtual #845                // Method android/net/Uri.getScheme:()Ljava/lang/String;
+       9: checkcast     #638                // class java/lang/CharSequence
+      12: astore_3
+      13: aload_3
+      14: ifnull        24
+      17: aload_3
+      18: invokestatic  #644                // Method kotlin/text/StringsKt.isBlank:(Ljava/lang/CharSequence;)Z
+      21: ifeq          28
+      24: iconst_1
+      25: goto          29
+      28: iconst_0
+      29: ifeq          52
+      32: new           #856                // class java/io/File
+      35: dup
+      36: aload_1
+      37: invokespecial #858                // Method java/io/File."<init>":(Ljava/lang/String;)V
+      40: invokestatic  #1009               // Method android/net/Uri.fromFile:(Ljava/io/File;)Landroid/net/Uri;
+      43: astore_3
+      44: aload_3
+      45: invokestatic  #485                // Method kotlin/jvm/internal/Intrinsics.checkNotNull:(Ljava/lang/Object;)V
+      48: aload_3
+      49: goto          59
+      52: aload_2
+      53: astore_3
+      54: aload_3
+      55: invokestatic  #485                // Method kotlin/jvm/internal/Intrinsics.checkNotNull:(Ljava/lang/Object;)V
+      58: aload_3
+      59: areturn
+
+  public static final android.content.Context access$getContext$p(com.ocutech.editor.export.Media3ExportExecutor);
+    Code:
+       0: aload_0
+       1: getfield      #124                // Field context:Landroid/content/Context;
+       4: areturn
+
+  public static final androidx.media3.transformer.Composition access$buildComposition(com.ocutech.editor.export.Media3ExportExecutor, com.ocutech.editor.core.PlannedProject, java.util.List);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokespecial #1017               // Method buildComposition:(Lcom/ocutech/editor/core/PlannedProject;Ljava/util/List;)Landroidx/media3/transformer/Composition;
+       6: areturn
+
+  public static final java.util.concurrent.ConcurrentHashMap access$getActiveTransformers$p(com.ocutech.editor.export.Media3ExportExecutor);
+    Code:
+       0: aload_0
+       1: getfield      #131                // Field activeTransformers:Ljava/util/concurrent/ConcurrentHashMap;
+       4: areturn
+
+  public static final java.lang.String access$persistOutput(com.ocutech.editor.export.Media3ExportExecutor, java.io.File, java.lang.String);
+    Code:
+       0: aload_0
+       1: aload_1
+       2: aload_2
+       3: invokespecial #1023               // Method persistOutput:(Ljava/io/File;Ljava/lang/String;)Ljava/lang/String;
+       6: areturn
+}

@@ -1,0 +1,27 @@
+# Root temp/debug folders
+/.gradle_tmp/
+/tmp_*/
+/tmpmeta_*/
+
+# OS / editor
+.DS_Store
+Thumbs.db
+*.log
+
+# Unity project: track only Assets, Packages, ProjectSettings
+/SpatialEditor/*
+!/SpatialEditor/Assets/
+!/SpatialEditor/Assets/**
+!/SpatialEditor/Packages/
+!/SpatialEditor/Packages/**
+!/SpatialEditor/ProjectSettings/
+!/SpatialEditor/ProjectSettings/**
+
+# Android library: keep source, ignore generated/build artifacts
+/AndroidLibrary/.gradle/
+/AndroidLibrary/.kotlin/
+/AndroidLibrary/.idea/
+/AndroidLibrary/local.properties
+/AndroidLibrary/**/build/
+/AndroidLibrary/**/.cxx/
+/AndroidLibrary/**/.externalNativeBuild/
