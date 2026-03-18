@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.IO;
 using System.Text;
+using System.Text.RegularExpressions;
 using UnityEngine;
 using TMPro;
 using UnityEngine.UI;
@@ -18,10 +19,13 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
         public string projectionKey = "Flat3D";
         public GameObject planeObject;
         public VideoPlayer videoPlayer;
+        [Tooltip("Optional renderer with stereo shader (_StereoMode). If empty, planeObject renderer is used.")]
+        public Renderer targetRenderer;
     }
 
     [Header("UI")]
     [SerializeField] private Button pickTwoVideosButton;
+    [SerializeField] private Button addVideoButton;
     [SerializeField] private Button saveButton;
     [SerializeField] private GameObject statusPopupObject;
     [SerializeField] private TMP_Text statusText;
@@ -31,6 +35,13 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
     [Tooltip("Add one row per plane you want to control.")]
     [SerializeField] private PlaneBinding[] planeBindings;
 
+    [Header("Picker")]
+    [Tooltip("Pick videos one-by-one to avoid Android Photo Picker synthetic names from multi-select.")]
+    [SerializeField] private bool forceSinglePickerEvenIfMultiSupported = true;
+    [SerializeField] private int maxSelectableVideos = 64;
+    [Tooltip("If filename type is unknown, force SBS Left-Right stereo for Flat3D.")]
+    [SerializeField] private bool forceSbsStereoForFlat3DFallback = true;
+
     [Header("Export")]
     [SerializeField] private float pollIntervalSeconds = 0.5f;
     [SerializeField] private int outputWidth = 1920;
@@ -38,11 +49,14 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
     [SerializeField] private int outputFps = 30;
     [SerializeField] private bool setAllUnmatchedPlanesInactive = true;
 
-    private AndroidGalleryVideoEntry firstVideo;
-    private AndroidGalleryVideoEntry secondVideo;
+    private readonly List<AndroidGalleryVideoEntry> selectedVideos = new List<AndroidGalleryVideoEntry>();
     private bool busy;
     private bool editorBridgeInitialized;
+    private bool nativeGalleryPickerConfigured;
     private string lastOutputPath;
+    private readonly List<AndroidGalleryVideoEntry> galleryNameCacheEntries = new List<AndroidGalleryVideoEntry>();
+    private readonly Dictionary<long, AndroidGalleryVideoEntry> galleryNameCacheById = new Dictionary<long, AndroidGalleryVideoEntry>();
+    private static readonly int StereoModeShaderId = Shader.PropertyToID("_StereoMode");
 
     public string LastOutputPath => lastOutputPath;
 
@@ -50,7 +64,12 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
     {
         if (pickTwoVideosButton != null)
         {
-            pickTwoVideosButton.onClick.AddListener(OnPickTwoVideosButtonClicked);
+            pickTwoVideosButton.onClick.AddListener(OnAddVideoButtonClicked);
+        }
+
+        if (addVideoButton != null && addVideoButton != pickTwoVideosButton)
+        {
+            addVideoButton.onClick.AddListener(OnAddVideoButtonClicked);
         }
 
         if (saveButton != null)
@@ -68,7 +87,12 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
     {
         if (pickTwoVideosButton != null)
         {
-            pickTwoVideosButton.onClick.RemoveListener(OnPickTwoVideosButtonClicked);
+            pickTwoVideosButton.onClick.RemoveListener(OnAddVideoButtonClicked);
+        }
+
+        if (addVideoButton != null && addVideoButton != pickTwoVideosButton)
+        {
+            addVideoButton.onClick.RemoveListener(OnAddVideoButtonClicked);
         }
 
         if (saveButton != null)
@@ -79,9 +103,14 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
 
     public void OnPickTwoVideosButtonClicked()
     {
+        OnAddVideoButtonClicked();
+    }
+
+    public void OnAddVideoButtonClicked()
+    {
         if (!busy)
         {
-            StartCoroutine(PickTwoVideosFlow());
+            StartCoroutine(AddVideoFlow());
         }
     }
 
@@ -93,11 +122,11 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
         }
     }
 
-    private IEnumerator PickTwoVideosFlow()
+    private IEnumerator AddVideoFlow()
     {
         busy = true;
         SetButtonsInteractable(false);
-        SetStatus("Processing: starting video selection...", true);
+        SetStatus("Processing: opening add video...", true);
 
         if (!AndroidVideoEditorBridge.IsAndroidRuntime)
         {
@@ -108,27 +137,39 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             yield break;
         }
 
-        SetStatus("Processing: requesting gallery permission...", true);
-        AndroidGalleryVideoEntry[] picked = null;
-        yield return PickTwoVideosWithNativeGallery((result) => picked = result);
-
-        if (picked == null || picked.Length < 2)
+        if (selectedVideos.Count >= Mathf.Max(1, maxSelectableVideos))
         {
-            Debug.LogError("ManualAndroidVideoComposerUI: Could not select 2 videos.");
-            SetStatus("Failed: could not select 2 videos.", true);
+            SetStatus($"Failed: max videos reached ({maxSelectableVideos}).", true);
             busy = false;
             SetButtonsInteractable(true);
             yield break;
         }
 
-        firstVideo = picked[0];
-        secondVideo = picked[1];
+        SetStatus("Processing: requesting gallery permission...", true);
+        AndroidGalleryVideoEntry picked = null;
+        yield return PickSingleVideoEntryWithNativeGallery((result) => picked = result);
 
-        ApplyVideoToMatchingPlane(firstVideo, 0);
-        ApplyVideoToMatchingPlane(secondVideo, 1);
+        if (picked == null)
+        {
+            Debug.LogError("ManualAndroidVideoComposerUI: Could not add video.");
+            SetStatus("Failed: could not add video.", true);
+            busy = false;
+            SetButtonsInteractable(true);
+            yield break;
+        }
 
-        Debug.Log($"ManualAndroidVideoComposerUI: Selected videos => {firstVideo.displayName} | {secondVideo.displayName}");
-        SetStatus($"Finished: selected videos\n1) {firstVideo.displayName}\n2) {secondVideo.displayName}", true);
+        selectedVideos.Add(picked);
+        if (setAllUnmatchedPlanesInactive)
+        {
+            SetAllPlanesActive(false);
+        }
+        for (int i = 0; i < selectedVideos.Count; i++)
+        {
+            ApplyVideoToMatchingPlane(selectedVideos[i], i);
+        }
+
+        Debug.Log($"ManualAndroidVideoComposerUI: Added video {selectedVideos.Count} => {picked.displayName}");
+        SetStatus(BuildSelectedVideosStatus(), true);
 
         busy = false;
         SetButtonsInteractable(true);
@@ -149,10 +190,10 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             yield break;
         }
 
-        if (firstVideo == null || secondVideo == null)
+        if (selectedVideos == null || selectedVideos.Count == 0)
         {
-            Debug.LogError("ManualAndroidVideoComposerUI: Pick 2 videos before exporting.");
-            SetStatus("Failed: pick 2 videos before exporting.", true);
+            Debug.LogError("ManualAndroidVideoComposerUI: Add at least 1 video before exporting.");
+            SetStatus("Failed: add at least 1 video before exporting.", true);
             busy = false;
             SetButtonsInteractable(true);
             yield break;
@@ -176,14 +217,14 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             editorBridgeInitialized = true;
         }
 
-        string outputFileName = BuildOutputFileName(firstVideo.displayName, secondVideo.displayName);
+        string outputFileName = BuildOutputFileName(selectedVideos);
         string outputPath = Path.Combine(Application.persistentDataPath, outputFileName);
         string outputUri = "file://" + outputPath.Replace("\\", "/");
         Debug.Log("ManualAndroidVideoComposerUI: outputPath => " + outputPath);
         Debug.Log("ManualAndroidVideoComposerUI: outputUri => " + outputUri);
         SetStatus("Processing: output path prepared...\n" + outputPath, true);
 
-        string projectJson = BuildProjectJson(new[] { firstVideo, secondVideo }, outputUri);
+        string projectJson = BuildProjectJson(selectedVideos.ToArray(), outputUri);
         Debug.Log("ManualAndroidVideoComposerUI: projectJson => " + projectJson);
 
         SetStatus("Processing: validating project...", true);
@@ -266,7 +307,9 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
 
     public void SetPickedVideosForTesting(string firstUri, string firstName, string secondUri, string secondName)
     {
-        firstVideo = new AndroidGalleryVideoEntry
+        selectedVideos.Clear();
+
+        AndroidGalleryVideoEntry first = new AndroidGalleryVideoEntry
         {
             uri = firstUri,
             displayName = string.IsNullOrEmpty(firstName) ? "video_a.mp4" : firstName,
@@ -276,7 +319,7 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             dateAddedSec = 0,
         };
 
-        secondVideo = new AndroidGalleryVideoEntry
+        AndroidGalleryVideoEntry second = new AndroidGalleryVideoEntry
         {
             uri = secondUri,
             displayName = string.IsNullOrEmpty(secondName) ? "video_b.mp4" : secondName,
@@ -286,14 +329,68 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             dateAddedSec = 0,
         };
 
-        ApplyVideoToMatchingPlane(firstVideo, 0);
-        ApplyVideoToMatchingPlane(secondVideo, 1);
-        SetStatus($"Finished: test videos set\n1) {firstVideo.displayName}\n2) {secondVideo.displayName}", true);
+        selectedVideos.Add(first);
+        selectedVideos.Add(second);
+
+        if (setAllUnmatchedPlanesInactive)
+        {
+            SetAllPlanesActive(false);
+        }
+        ApplyVideoToMatchingPlane(first, 0);
+        ApplyVideoToMatchingPlane(second, 1);
+        SetStatus(BuildSelectedVideosStatus(), true);
+    }
+
+    private IEnumerator PickSingleVideoEntryWithNativeGallery(Action<AndroidGalleryVideoEntry> onCompleted)
+    {
+        onCompleted ??= delegate { };
+
+        ConfigureNativeGalleryPickerForDisplayNames();
+
+        bool permissionDone = false;
+        bool permissionGranted = false;
+        RequestNativeGalleryReadPermission((granted) =>
+        {
+            permissionGranted = granted;
+            permissionDone = true;
+        });
+        while (!permissionDone)
+        {
+            yield return null;
+        }
+
+        if (!permissionGranted)
+        {
+            SetStatus("Failed: gallery permission denied.", true);
+            onCompleted(null);
+            yield break;
+        }
+
+        SetStatus("Processing: opening gallery picker...", true);
+        Debug.Log("ManualAndroidVideoComposerUI: add pick start. forceSingle=" + forceSinglePickerEvenIfMultiSupported);
+
+        string pickedPath = null;
+        yield return PickSingleVideoWithNativeGallery("Select video", (path) => pickedPath = path);
+
+        if (string.IsNullOrEmpty(pickedPath))
+        {
+            Debug.LogWarning("ManualAndroidVideoComposerUI: add pick returned empty path.");
+            SetStatus("Failed: video was not selected.", true);
+            onCompleted(null);
+            yield break;
+        }
+
+        Debug.Log("ManualAndroidVideoComposerUI: add pick path => " + pickedPath);
+        RefreshGalleryNameCache();
+        AndroidGalleryVideoEntry entry = BuildEntryFromLocalPath(pickedPath);
+        onCompleted(entry);
     }
 
     private IEnumerator PickTwoVideosWithNativeGallery(Action<AndroidGalleryVideoEntry[]> onCompleted)
     {
         onCompleted ??= delegate { };
+
+        ConfigureNativeGalleryPickerForDisplayNames();
 
         bool permissionDone = false;
         bool permissionGranted = false;
@@ -316,8 +413,9 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
 
         SetStatus("Processing: opening gallery picker...", true);
         string[] pickedPaths = null;
+        Debug.Log("ManualAndroidVideoComposerUI: picker start. forceSingle=" + forceSinglePickerEvenIfMultiSupported);
 
-        if (CanSelectMultipleVideosViaNativeGallery())
+        if (!forceSinglePickerEvenIfMultiSupported && CanSelectMultipleVideosViaNativeGallery())
         {
             bool pickerDone = false;
             PickVideosViaNativeGallery(true, "Select 2 videos", (paths) =>
@@ -330,6 +428,8 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             {
                 yield return null;
             }
+
+            Debug.Log("ManualAndroidVideoComposerUI: multi pick result count=" + (pickedPaths == null ? 0 : pickedPaths.Length));
         }
 
         if (pickedPaths == null || pickedPaths.Length < 2)
@@ -343,21 +443,28 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             }
             if (string.IsNullOrEmpty(firstPath))
             {
+                Debug.LogWarning("ManualAndroidVideoComposerUI: first pick returned empty path.");
+                SetStatus("Failed: first video was not selected.", true);
                 onCompleted(null);
                 yield break;
             }
+            Debug.Log("ManualAndroidVideoComposerUI: first pick path => " + firstPath);
 
             yield return PickSingleVideoWithNativeGallery("Select second video", (path) => secondPath = path);
             if (string.IsNullOrEmpty(secondPath))
             {
+                Debug.LogWarning("ManualAndroidVideoComposerUI: second pick returned empty path.");
+                SetStatus("Failed: second video was not selected.", true);
                 onCompleted(null);
                 yield break;
             }
+            Debug.Log("ManualAndroidVideoComposerUI: second pick path => " + secondPath);
 
             pickedPaths = new[] { firstPath, secondPath };
         }
 
         List<AndroidGalleryVideoEntry> entries = new List<AndroidGalleryVideoEntry>(2);
+        RefreshGalleryNameCache();
         for (int i = 0; i < pickedPaths.Length && entries.Count < 2; i++)
         {
             AndroidGalleryVideoEntry entry = BuildEntryFromLocalPath(pickedPaths[i]);
@@ -414,15 +521,654 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             Debug.LogWarning("ManualAndroidVideoComposerUI: could not read video properties for " + path + ". " + ex.Message);
         }
 
+        long sizeBytes = TryGetFileSizeBytes(path);
+        string displayName = ResolveDisplayName(path, durationMs, sizeBytes);
+        string fallbackName = Path.GetFileName(path);
+        if (!string.IsNullOrEmpty(displayName) &&
+            !string.Equals(displayName, fallbackName, StringComparison.OrdinalIgnoreCase))
+        {
+            Debug.Log($"ManualAndroidVideoComposerUI: Resolved display name '{displayName}' from metadata for '{fallbackName}'.");
+        }
+
         return new AndroidGalleryVideoEntry
         {
             uri = path.Replace("\\", "/"),
-            displayName = Path.GetFileName(path),
+            displayName = string.IsNullOrEmpty(displayName) ? Path.GetFileName(path) : displayName,
             durationMs = durationMs,
-            sizeBytes = 0,
+            sizeBytes = sizeBytes,
             mimeType = "video/*",
             dateAddedSec = 0,
         };
+    }
+
+    private string ResolveDisplayName(string path, long durationMs, long sizeBytes)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            return null;
+        }
+
+        string cacheName = ResolveDisplayNameFromGalleryCache(path, durationMs, sizeBytes);
+        if (!string.IsNullOrEmpty(cacheName))
+        {
+            return cacheName;
+        }
+
+        string byPathDataName = ResolveDisplayNameByDataPath(path);
+        if (!string.IsNullOrEmpty(byPathDataName))
+        {
+            return byPathDataName;
+        }
+
+        string mediaStoreName = ResolveDisplayNameFromMediaStore(path);
+        if (!string.IsNullOrEmpty(mediaStoreName))
+        {
+            return mediaStoreName;
+        }
+
+        string tagTitleName = ResolveDisplayNameFromTagLib(path);
+        if (!string.IsNullOrEmpty(tagTitleName))
+        {
+            return tagTitleName;
+        }
+
+        return Path.GetFileName(path);
+    }
+
+    private void RefreshGalleryNameCache()
+    {
+        galleryNameCacheEntries.Clear();
+        galleryNameCacheById.Clear();
+
+#if UNITY_ANDROID && !UNITY_EDITOR
+        try
+        {
+            if (TryPopulateGalleryNameCacheWithContentResolver())
+            {
+                Debug.Log($"ManualAndroidVideoComposerUI: gallery cache loaded via resolver ({galleryNameCacheEntries.Count} videos).");
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning("ManualAndroidVideoComposerUI: gallery resolver cache refresh failed. " + ex.Message);
+        }
+
+        try
+        {
+            if (TryPopulateGalleryNameCacheWithBridge())
+            {
+                Debug.Log($"ManualAndroidVideoComposerUI: gallery cache loaded via bridge ({galleryNameCacheEntries.Count} videos).");
+                return;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning("ManualAndroidVideoComposerUI: gallery bridge cache refresh failed. " + ex.Message);
+        }
+
+        Debug.LogWarning("ManualAndroidVideoComposerUI: gallery cache lookup unavailable. Falling back to path/uri metadata.");
+#endif
+    }
+
+    private bool TryPopulateGalleryNameCacheWithBridge()
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        AndroidGalleryQueryConfig config = new AndroidGalleryQueryConfig
+        {
+            limit = 1000,
+            includePending = true,
+            bucketId = null
+        };
+
+        string json = AndroidVideoEditorBridge.QueryGalleryVideos(config);
+        AndroidGalleryQueryResponse response = SafeFromJson<AndroidGalleryQueryResponse>(json);
+        if (response == null || !response.ok || response.videos == null || response.videos.Length == 0)
+        {
+            Debug.Log("ManualAndroidVideoComposerUI: gallery bridge cache lookup skipped => " + json);
+            return false;
+        }
+
+        for (int i = 0; i < response.videos.Length; i++)
+        {
+            AddGalleryCacheEntry(response.videos[i]);
+        }
+
+        return galleryNameCacheEntries.Count > 0;
+#else
+        return false;
+#endif
+    }
+
+    private bool TryPopulateGalleryNameCacheWithContentResolver()
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        using (AndroidJavaObject resolver = AndroidActivity.Call<AndroidJavaObject>("getContentResolver"))
+        using (AndroidJavaClass mediaStoreVideoClass = new AndroidJavaClass("android.provider.MediaStore$Video$Media"))
+        using (AndroidJavaObject externalVideoUri = mediaStoreVideoClass.GetStatic<AndroidJavaObject>("EXTERNAL_CONTENT_URI"))
+        using (AndroidJavaClass contentUrisClass = new AndroidJavaClass("android.content.ContentUris"))
+        {
+            if (resolver == null || externalVideoUri == null || contentUrisClass == null)
+            {
+                return false;
+            }
+
+            string[] projection = { "_id", "_display_name", "duration", "_size", "mime_type", "date_added" };
+            using (AndroidJavaObject cursor = resolver.Call<AndroidJavaObject>("query", externalVideoUri, projection, null, null, "date_added DESC"))
+            {
+                if (cursor == null)
+                {
+                    return false;
+                }
+
+                int idCol = cursor.Call<int>("getColumnIndex", "_id");
+                int nameCol = cursor.Call<int>("getColumnIndex", "_display_name");
+                int durationCol = cursor.Call<int>("getColumnIndex", "duration");
+                int sizeCol = cursor.Call<int>("getColumnIndex", "_size");
+                int mimeCol = cursor.Call<int>("getColumnIndex", "mime_type");
+                int dateCol = cursor.Call<int>("getColumnIndex", "date_added");
+
+                int maxRows = 2000;
+                int count = 0;
+                while (count < maxRows && cursor.Call<bool>("moveToNext"))
+                {
+                    if (idCol < 0)
+                    {
+                        break;
+                    }
+
+                    long id = cursor.Call<long>("getLong", idCol);
+                    if (id <= 0)
+                    {
+                        continue;
+                    }
+
+                    using (AndroidJavaObject itemUri = contentUrisClass.CallStatic<AndroidJavaObject>("withAppendedId", externalVideoUri, id))
+                    {
+                        AndroidGalleryVideoEntry entry = new AndroidGalleryVideoEntry
+                        {
+                            uri = itemUri != null ? itemUri.Call<string>("toString") : ("content://media/external/video/media/" + id.ToString(CultureInfo.InvariantCulture)),
+                            displayName = nameCol >= 0 ? cursor.Call<string>("getString", nameCol) : null,
+                            durationMs = durationCol >= 0 ? cursor.Call<long>("getLong", durationCol) : 0,
+                            sizeBytes = sizeCol >= 0 ? cursor.Call<long>("getLong", sizeCol) : 0,
+                            mimeType = mimeCol >= 0 ? cursor.Call<string>("getString", mimeCol) : "video/*",
+                            dateAddedSec = dateCol >= 0 ? cursor.Call<long>("getLong", dateCol) : 0,
+                        };
+
+                        if (string.IsNullOrWhiteSpace(entry.displayName))
+                        {
+                            entry.displayName = id.ToString(CultureInfo.InvariantCulture) + ".mp4";
+                        }
+
+                        AddGalleryCacheEntry(entry);
+                        count++;
+                    }
+                }
+            }
+
+            return galleryNameCacheEntries.Count > 0;
+        }
+#else
+        return false;
+#endif
+    }
+
+    private void AddGalleryCacheEntry(AndroidGalleryVideoEntry video)
+    {
+        if (video == null)
+        {
+            return;
+        }
+
+        galleryNameCacheEntries.Add(video);
+        long id = ExtractMediaStoreIdFromUri(video.uri);
+        if (id > 0 && !galleryNameCacheById.ContainsKey(id))
+        {
+            galleryNameCacheById[id] = video;
+        }
+    }
+
+    private string ResolveDisplayNameFromGalleryCache(string path, long durationMs, long sizeBytes)
+    {
+        if (galleryNameCacheEntries == null || galleryNameCacheEntries.Count == 0)
+        {
+            return null;
+        }
+
+        long pathId = ExtractMediaStoreIdFromPath(path);
+        if (pathId > 0 &&
+            galleryNameCacheById.TryGetValue(pathId, out AndroidGalleryVideoEntry idMatch) &&
+            idMatch != null &&
+            !string.IsNullOrWhiteSpace(idMatch.displayName))
+        {
+            return idMatch.displayName.Trim();
+        }
+
+        AndroidGalleryVideoEntry durationAndSizeMatch = null;
+        AndroidGalleryVideoEntry sizeOnlyMatch = null;
+        AndroidGalleryVideoEntry durationOnlyMatch = null;
+
+        for (int i = 0; i < galleryNameCacheEntries.Count; i++)
+        {
+            AndroidGalleryVideoEntry candidate = galleryNameCacheEntries[i];
+            if (candidate == null || string.IsNullOrWhiteSpace(candidate.displayName))
+            {
+                continue;
+            }
+
+            bool sizeMatch = sizeBytes > 0 && candidate.sizeBytes > 0 && candidate.sizeBytes == sizeBytes;
+            bool durationMatch = durationMs > 0 && candidate.durationMs > 0 && Math.Abs(candidate.durationMs - durationMs) <= 750;
+
+            if (sizeMatch && durationMatch)
+            {
+                durationAndSizeMatch = candidate;
+                break;
+            }
+
+            if (sizeMatch && sizeOnlyMatch == null)
+            {
+                sizeOnlyMatch = candidate;
+            }
+
+            if (durationMatch && durationOnlyMatch == null)
+            {
+                durationOnlyMatch = candidate;
+            }
+        }
+
+        AndroidGalleryVideoEntry best = durationAndSizeMatch ?? sizeOnlyMatch ?? durationOnlyMatch;
+        if (best == null || string.IsNullOrWhiteSpace(best.displayName))
+        {
+            return null;
+        }
+
+        return best.displayName.Trim();
+    }
+
+    private string ResolveDisplayNameFromMediaStore(string path)
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        try
+        {
+            long mediaId = ExtractMediaStoreIdFromPath(path);
+            if (mediaId <= 0)
+            {
+                return null;
+            }
+
+            string pickerContentUri = BuildPhotoPickerContentUriFromSyntheticPath(path, mediaId);
+            string[] candidateUris =
+            {
+                "content://media/external/video/media/" + mediaId.ToString(CultureInfo.InvariantCulture),
+                "content://media/external_primary/video/media/" + mediaId.ToString(CultureInfo.InvariantCulture),
+                "content://media/external/file/" + mediaId.ToString(CultureInfo.InvariantCulture),
+                "content://media/external_primary/file/" + mediaId.ToString(CultureInfo.InvariantCulture),
+                "content://media/internal/video/media/" + mediaId.ToString(CultureInfo.InvariantCulture),
+                "content://media/internal/file/" + mediaId.ToString(CultureInfo.InvariantCulture),
+                pickerContentUri,
+            };
+
+            string syntheticFallback = null;
+            for (int i = 0; i < candidateUris.Length; i++)
+            {
+                string candidate = candidateUris[i];
+                if (string.IsNullOrEmpty(candidate))
+                {
+                    continue;
+                }
+
+                string name = QueryDisplayNameFromContentUri(candidate);
+                if (!string.IsNullOrEmpty(name))
+                {
+                    if (IsLikelySyntheticPickerName(name))
+                    {
+                        if (string.IsNullOrEmpty(syntheticFallback))
+                        {
+                            syntheticFallback = name;
+                        }
+
+                        continue;
+                    }
+
+                    Debug.Log($"ManualAndroidVideoComposerUI: Resolved _display_name '{name}' via uri '{candidate}'.");
+                    return name;
+                }
+            }
+
+            if (!string.IsNullOrEmpty(syntheticFallback))
+            {
+                return syntheticFallback;
+            }
+
+            if (!string.IsNullOrEmpty(pickerContentUri))
+            {
+                Debug.LogWarning("ManualAndroidVideoComposerUI: _display_name not found for picker uri: " + pickerContentUri);
+            }
+
+            return null;
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning("ManualAndroidVideoComposerUI: MediaStore display name lookup failed. " + ex.Message);
+            return null;
+        }
+#else
+        return null;
+#endif
+    }
+
+    private string ResolveDisplayNameByDataPath(string path)
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        try
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return null;
+            }
+
+            string normalizedPath = path.Replace("\\", "/");
+            using (AndroidJavaObject resolver = AndroidActivity.Call<AndroidJavaObject>("getContentResolver"))
+            using (AndroidJavaClass uriClass = new AndroidJavaClass("android.net.Uri"))
+            using (AndroidJavaObject filesExternal = uriClass.CallStatic<AndroidJavaObject>("parse", "content://media/external/file"))
+            using (AndroidJavaObject filesExternalPrimary = uriClass.CallStatic<AndroidJavaObject>("parse", "content://media/external_primary/file"))
+            {
+                if (resolver == null)
+                {
+                    return null;
+                }
+
+                string[] projection = { "_display_name" };
+                string selection = "_data=?";
+                string[] selectionArgs = { normalizedPath };
+
+                string fromExternal = QueryDisplayNameFromCursor(resolver, filesExternal, projection, selection, selectionArgs);
+                if (!string.IsNullOrEmpty(fromExternal))
+                {
+                    return fromExternal;
+                }
+
+                return QueryDisplayNameFromCursor(resolver, filesExternalPrimary, projection, selection, selectionArgs);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning("ManualAndroidVideoComposerUI: path-based display name lookup failed. " + ex.Message);
+            return null;
+        }
+#else
+        return null;
+#endif
+    }
+
+    private string BuildPhotoPickerContentUriFromSyntheticPath(string path, long mediaId)
+    {
+        if (string.IsNullOrEmpty(path) || mediaId <= 0)
+        {
+            return null;
+        }
+
+        Match pickerMatch = Regex.Match(path, @"/\.transforms/synthetic/picker/(\d+)/([^/\\]+)/media/(\d+)(?:\.[^/\\]+)?$");
+        if (!pickerMatch.Success || pickerMatch.Groups.Count < 4)
+        {
+            return null;
+        }
+
+        string pickerUser = pickerMatch.Groups[1].Value;
+        string providerAuthority = pickerMatch.Groups[2].Value;
+        string mediaIdFromPath = pickerMatch.Groups[3].Value;
+        if (string.IsNullOrEmpty(pickerUser) || string.IsNullOrEmpty(providerAuthority))
+        {
+            return null;
+        }
+
+        string idPart = string.IsNullOrEmpty(mediaIdFromPath)
+            ? mediaId.ToString(CultureInfo.InvariantCulture)
+            : mediaIdFromPath;
+
+        // Android Photo Picker uri format:
+        // content://media/picker/<user>/<provider-authority>/media/<id>
+        return "content://media/picker/" + pickerUser + "/" + providerAuthority + "/media/" + idPart;
+    }
+
+    private string QueryDisplayNameFromContentUri(string uriString)
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        try
+        {
+            using (AndroidJavaObject resolver = AndroidActivity.Call<AndroidJavaObject>("getContentResolver"))
+            using (AndroidJavaClass uriClass = new AndroidJavaClass("android.net.Uri"))
+            using (AndroidJavaObject contentUri = uriClass.CallStatic<AndroidJavaObject>("parse", uriString))
+            {
+                if (resolver == null || contentUri == null)
+                {
+                    return null;
+                }
+
+                string[] preferredProjection = { "_display_name", "display_name", "_data" };
+                string fromPreferred = QueryDisplayNameFromCursor(resolver, contentUri, preferredProjection, null, null);
+                if (!string.IsNullOrEmpty(fromPreferred))
+                {
+                    return fromPreferred;
+                }
+
+                // Last chance: ask for all columns and probe common name columns dynamically.
+                return QueryDisplayNameFromCursor(resolver, contentUri, null, null, null);
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning("ManualAndroidVideoComposerUI: content uri display name lookup failed for '" + uriString + "'. " + ex.Message);
+            return null;
+        }
+    #else
+        return null;
+    #endif
+    }
+
+    private bool IsLikelySyntheticPickerName(string fileName)
+    {
+        if (string.IsNullOrWhiteSpace(fileName))
+        {
+            return false;
+        }
+
+        string trimmed = fileName.Trim();
+        return Regex.IsMatch(trimmed, @"^\d{6,}\.[A-Za-z0-9]{2,5}$");
+    }
+
+    private string QueryDisplayNameFromCursor(
+        AndroidJavaObject resolver,
+        AndroidJavaObject contentUri,
+        string[] projection,
+        string selection,
+        string[] selectionArgs)
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        if (resolver == null || contentUri == null)
+        {
+            return null;
+        }
+
+        try
+        {
+            using (AndroidJavaObject cursor = resolver.Call<AndroidJavaObject>("query", contentUri, projection, selection, selectionArgs, null))
+            {
+                if (cursor == null || !cursor.Call<bool>("moveToFirst"))
+                {
+                    return null;
+                }
+
+                string value = ReadCursorColumnAsString(cursor, "_display_name");
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value.Trim();
+                }
+
+                value = ReadCursorColumnAsString(cursor, "display_name");
+                if (!string.IsNullOrWhiteSpace(value))
+                {
+                    return value.Trim();
+                }
+
+                int columnCount = cursor.Call<int>("getColumnCount");
+                for (int i = 0; i < columnCount; i++)
+                {
+                    string columnName = cursor.Call<string>("getColumnName", i);
+                    if (string.IsNullOrEmpty(columnName))
+                    {
+                        continue;
+                    }
+
+                    string lower = columnName.ToLowerInvariant();
+                    if (lower.Contains("display") || lower == "name")
+                    {
+                        value = cursor.Call<string>("getString", i);
+                        if (!string.IsNullOrWhiteSpace(value))
+                        {
+                            return value.Trim();
+                        }
+                    }
+                }
+
+                return null;
+            }
+        }
+        catch
+        {
+            return null;
+        }
+#else
+        return null;
+#endif
+    }
+
+    private string ReadCursorColumnAsString(AndroidJavaObject cursor, string columnName)
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        if (cursor == null || string.IsNullOrEmpty(columnName))
+        {
+            return null;
+        }
+
+        int columnIndex = cursor.Call<int>("getColumnIndex", columnName);
+        if (columnIndex < 0)
+        {
+            return null;
+        }
+
+        try
+        {
+            return cursor.Call<string>("getString", columnIndex);
+        }
+        catch
+        {
+            return null;
+        }
+#else
+        return null;
+#endif
+    }
+
+    private long ExtractMediaStoreIdFromPath(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            return -1;
+        }
+
+        string fileNameNoExt = Path.GetFileNameWithoutExtension(path);
+        if (long.TryParse(fileNameNoExt, NumberStyles.Integer, CultureInfo.InvariantCulture, out long directId))
+        {
+            return directId;
+        }
+
+        Match match = Regex.Match(path, @"(?:/|\\)(\d+)(?:\.[^/\\]+)?$");
+        if (match.Success &&
+            long.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long regexId))
+        {
+            return regexId;
+        }
+
+        return -1;
+    }
+
+    private long ExtractMediaStoreIdFromUri(string uri)
+    {
+        if (string.IsNullOrEmpty(uri))
+        {
+            return -1;
+        }
+
+        Match match = Regex.Match(uri, @"/(\d+)$");
+        if (match.Success &&
+            long.TryParse(match.Groups[1].Value, NumberStyles.Integer, CultureInfo.InvariantCulture, out long id))
+        {
+            return id;
+        }
+
+        return -1;
+    }
+
+    private long TryGetFileSizeBytes(string path)
+    {
+        if (string.IsNullOrEmpty(path))
+        {
+            return 0;
+        }
+
+        try
+        {
+            FileInfo fileInfo = new FileInfo(path);
+            if (!fileInfo.Exists)
+            {
+                return 0;
+            }
+
+            return fileInfo.Length;
+        }
+        catch
+        {
+            return 0;
+        }
+    }
+
+    private string ResolveDisplayNameFromTagLib(string path)
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        try
+        {
+            if (string.IsNullOrEmpty(path) || path.StartsWith("content://", StringComparison.OrdinalIgnoreCase))
+            {
+                return null;
+            }
+
+            using (TagLib.File tagFile = TagLib.File.Create(path))
+            {
+                string title = tagFile?.Tag?.Title;
+                if (string.IsNullOrWhiteSpace(title))
+                {
+                    return null;
+                }
+
+                string extension = Path.GetExtension(path);
+                string trimmed = title.Trim();
+                if (string.IsNullOrEmpty(extension) || trimmed.EndsWith(extension, StringComparison.OrdinalIgnoreCase))
+                {
+                    return trimmed;
+                }
+
+                return trimmed + extension;
+            }
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning("ManualAndroidVideoComposerUI: TagLib display name fallback failed. " + ex.Message);
+            return null;
+        }
+#else
+        return null;
+#endif
     }
 
     private bool CanSelectMultipleVideosViaNativeGallery()
@@ -469,6 +1215,35 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
         }
 #else
         onCompleted(false);
+#endif
+    }
+
+    private void ConfigureNativeGalleryPickerForDisplayNames()
+    {
+#if UNITY_ANDROID && !UNITY_EDITOR
+        if (nativeGalleryPickerConfigured)
+        {
+            return;
+        }
+
+        try
+        {
+            using (AndroidJavaClass pickerFragmentClass = new AndroidJavaClass("com.yasirkula.unity.NativeGalleryMediaPickerFragment"))
+            {
+                // Ensure picker Uris remain queryable after selection and preserve original names when copied.
+                pickerFragmentClass.SetStatic("GrantPersistableUriPermission", true);
+                pickerFragmentClass.SetStatic("tryPreserveFilenames", true);
+                pickerFragmentClass.SetStatic("preferGetContent", true);
+                pickerFragmentClass.SetStatic("useDefaultGalleryApp", false);
+            }
+
+            nativeGalleryPickerConfigured = true;
+            Debug.Log("ManualAndroidVideoComposerUI: NativeGallery picker configured for display-name preservation.");
+        }
+        catch (Exception ex)
+        {
+            Debug.LogWarning("ManualAndroidVideoComposerUI: Failed to configure NativeGallery picker flags. " + ex.Message);
+        }
 #endif
     }
 
@@ -655,11 +1430,6 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             return;
         }
 
-        if (setAllUnmatchedPlanesInactive)
-        {
-            SetAllPlanesActive(false);
-        }
-
         string projectionKey = MapProjectionToKey(entry.displayName);
         PlaneBinding binding = FindBindingByKey(projectionKey) ?? FindBindingByKey("Flat3D");
         if (binding == null)
@@ -685,6 +1455,7 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
         binding.videoPlayer.playOnAwake = false;
         binding.videoPlayer.isLooping = true;
         binding.videoPlayer.Prepare();
+        ApplyStereoModeToBinding(binding, projectionKey, entry.displayName);
         StartCoroutine(PlayWhenPrepared(binding.videoPlayer));
 
         Debug.Log($"ManualAndroidVideoComposerUI: Slot {slot + 1} -> {projectionKey} -> {entry.displayName}");
@@ -752,6 +1523,74 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
         }
     }
 
+    private void ApplyStereoModeToBinding(PlaneBinding binding, string projectionKey, string fileName)
+    {
+        if (binding == null)
+        {
+            return;
+        }
+
+        Renderer targetRenderer = binding.targetRenderer;
+        if (targetRenderer == null && binding.planeObject != null)
+        {
+            targetRenderer = binding.planeObject.GetComponent<Renderer>();
+        }
+
+        if (targetRenderer == null)
+        {
+            return;
+        }
+
+        Material material = targetRenderer.material;
+        if (material == null)
+        {
+            return;
+        }
+
+        if (!material.HasProperty(StereoModeShaderId))
+        {
+            Debug.LogWarning($"ManualAndroidVideoComposerUI: Renderer '{targetRenderer.gameObject.name}' material has no _StereoMode property. Stereo 3D cannot be forced.");
+            return;
+        }
+
+        int stereoMode = ResolveStereoShaderMode(fileName, projectionKey);
+        material.SetFloat(StereoModeShaderId, stereoMode);
+        Debug.Log($"ManualAndroidVideoComposerUI: StereoMode={stereoMode} applied on '{targetRenderer.gameObject.name}' for '{fileName}'.");
+    }
+
+    private int ResolveStereoShaderMode(string fileName, string projectionKey)
+    {
+        FilenameVideoDetectionResult detection = FilenameVideoTypeDetector.Detect(fileName);
+        if (detection != null)
+        {
+            switch (detection.StereoLayout)
+            {
+                case DetectedStereoLayout.LeftRight:
+                    return 1;
+                case DetectedStereoLayout.RightLeft:
+                    return 2;
+                case DetectedStereoLayout.TopBottom:
+                    return 3;
+                case DetectedStereoLayout.BottomTop:
+                    return 4;
+            }
+
+            if (forceSbsStereoForFlat3DFallback &&
+                string.Equals(projectionKey, "Flat3D", StringComparison.OrdinalIgnoreCase))
+            {
+                return 1;
+            }
+        }
+
+        if (forceSbsStereoForFlat3DFallback &&
+            string.Equals(projectionKey, "Flat3D", StringComparison.OrdinalIgnoreCase))
+        {
+            return 1;
+        }
+
+        return 0;
+    }
+
     private PlaneBinding FindBindingByKey(string key)
     {
         if (planeBindings == null)
@@ -795,6 +1634,11 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
             pickTwoVideosButton.interactable = interactable;
         }
 
+        if (addVideoButton != null)
+        {
+            addVideoButton.interactable = interactable;
+        }
+
         if (saveButton != null)
         {
             saveButton.interactable = interactable;
@@ -820,6 +1664,31 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
         {
             statusPopupObject.SetActive(visible);
         }
+    }
+
+    private string BuildSelectedVideosStatus()
+    {
+        StringBuilder sb = new StringBuilder(256);
+        sb.Append("Finished: selected videos (");
+        sb.Append(selectedVideos.Count);
+        sb.Append(")");
+
+        int startIndex = Mathf.Max(0, selectedVideos.Count - 6);
+        for (int i = startIndex; i < selectedVideos.Count; i++)
+        {
+            AndroidGalleryVideoEntry entry = selectedVideos[i];
+            if (entry == null)
+            {
+                continue;
+            }
+
+            sb.Append('\n');
+            sb.Append(i + 1);
+            sb.Append(") ");
+            sb.Append(entry.displayName);
+        }
+
+        return sb.ToString();
     }
 
     private string BuildProjectJson(AndroidGalleryVideoEntry[] inputs, string outputUri)
@@ -933,12 +1802,16 @@ public class ManualAndroidVideoComposerUI : MonoBehaviour
         return sb.ToString();
     }
 
-    private string BuildOutputFileName(string firstName, string secondName)
+    private string BuildOutputFileName(IReadOnlyList<AndroidGalleryVideoEntry> inputs)
     {
+        string firstName = (inputs != null && inputs.Count > 0 && inputs[0] != null) ? inputs[0].displayName : "video_a.mp4";
+        string secondName = (inputs != null && inputs.Count > 1 && inputs[1] != null) ? inputs[1].displayName : "video_b.mp4";
+
         string cleanA = SanitizeBaseName(Path.GetFileNameWithoutExtension(firstName));
         string cleanB = SanitizeBaseName(Path.GetFileNameWithoutExtension(secondName));
+        string countPart = inputs == null ? "0clips" : inputs.Count.ToString(CultureInfo.InvariantCulture) + "clips";
         string timestamp = DateTime.Now.ToString("yyyyMMdd_HHmmss");
-        return $"SpatialEditor_{cleanA}_{cleanB}_{timestamp}.mp4";
+        return $"SpatialEditor_{cleanA}_{cleanB}_{countPart}_{timestamp}.mp4";
     }
 
     private string SanitizeBaseName(string value)
